@@ -3,7 +3,8 @@ package com.example.clareli.mvp_video_record.Presenter;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
-import android.view.Surface;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraManager;
 import android.view.TextureView;
 
 import com.example.clareli.mvp_video_record.MainActivity;
@@ -14,19 +15,23 @@ import com.example.clareli.mvp_video_record.View.IViewVideoRecordCallback;
 
 import java.lang.ref.WeakReference;
 
+import static android.Manifest.permission.CAMERA;
+import static android.Manifest.permission.RECORD_AUDIO;
+import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
+import static com.example.clareli.mvp_video_record.Util.IConstant.REQUEST_PERMISSION_CODE;
+import static com.example.clareli.mvp_video_record.Util.PermissionCheck.hasPermissionsGranted;
+import static com.example.clareli.mvp_video_record.Util.PermissionCheck.requestPermission;
+
 public class PresenterVideoPreviewRecord implements IPresenterVideoPreviewRecord {
     private final WeakReference<Activity> _messageViewReference;
     private ICamera iCamera;
     private IViewVideoRecordCallback _iViewVideoRecordCallback;
-    private int _rotation = Surface.ROTATION_0;
     private Object _systemService = null;
-    private int _orientation = -5;
+    private String[] cameraPermission = {WRITE_EXTERNAL_STORAGE, CAMERA, RECORD_AUDIO};
 
     public PresenterVideoPreviewRecord(Activity activity) {
         _messageViewReference = new WeakReference<>(activity);
         iCamera = new CameraClass(_messageViewReference.get(), this);
-
-
     }
 
     @Override
@@ -43,20 +48,33 @@ public class PresenterVideoPreviewRecord implements IPresenterVideoPreviewRecord
     @Override
     public void videoPreviewStart(AutoFitTextureView textureView, IViewVideoRecordCallback iViewVideoRecordCallback) {
         _iViewVideoRecordCallback = iViewVideoRecordCallback;
-        getInitData();
         if (textureView.isAvailable()) {
-            if (((MainActivity) (_messageViewReference.get())).isPermissionGranted()) {
-                iCamera.openCamera(textureView.getWidth(), textureView.getHeight());
+            if (hasPermissionsGranted(_messageViewReference.get(), cameraPermission)) {
+                String cameraId = selectCamera();
+                CameraManager manager = (CameraManager) _systemService;
+                iCamera.openCamera(textureView.getWidth(), textureView.getHeight(), cameraId, manager, textureView.getSurfaceTexture());
             } else {
                 ((MainActivity) (_messageViewReference.get())).requestPermission();
                 return;
             }
         } else {
-            iCamera.sendTextureView(textureView);
             textureView.setSurfaceTextureListener(mSurfaceTextureListener);
         }
 
+    }
 
+    public String selectCamera() {
+        String cameraId = null;
+        if (_systemService == null)
+            _systemService = _messageViewReference.get().getSystemService(Context.CAMERA_SERVICE);
+
+        CameraManager manager = (CameraManager) _systemService;
+        try {
+            cameraId = manager.getCameraIdList()[0];
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+        return cameraId;
     }
 
     @Override
@@ -74,10 +92,12 @@ public class PresenterVideoPreviewRecord implements IPresenterVideoPreviewRecord
 
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-            if (((MainActivity) (_messageViewReference.get())).isPermissionGranted()) {
-                iCamera.openCamera(width, height);
+            if (hasPermissionsGranted(_messageViewReference.get(), cameraPermission)) {
+                String cameraId = selectCamera();
+                CameraManager manager = (CameraManager) _systemService;
+                iCamera.openCamera(width, height, cameraId, manager, surface);
             } else {
-                ((MainActivity) (_messageViewReference.get())).requestPermission();
+                requestPermission((MainActivity) (_messageViewReference.get()), cameraPermission, REQUEST_PERMISSION_CODE);
                 return;
             }
         }
@@ -96,18 +116,6 @@ public class PresenterVideoPreviewRecord implements IPresenterVideoPreviewRecord
 
         }
     };
-
-    @Override
-    public void getInitData() {
-        if ((_systemService == null) && (_orientation == -5)) {
-            _rotation = _messageViewReference.get().getWindowManager().getDefaultDisplay().getRotation();
-            _systemService = _messageViewReference.get().getSystemService(Context.CAMERA_SERVICE);
-            _orientation = _messageViewReference.get().getResources().getConfiguration().orientation;
-            iCamera.setInitSetting(_systemService, _rotation, _orientation);
-        } else
-            return;
-
-    }
 
     @Override
     public void startBackground() {

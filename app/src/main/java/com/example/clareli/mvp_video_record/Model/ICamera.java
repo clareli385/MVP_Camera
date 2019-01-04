@@ -1,6 +1,9 @@
 package com.example.clareli.mvp_video_record.Model;
 
 
+import android.graphics.SurfaceTexture;
+import android.hardware.camera2.CameraManager;
+
 import com.example.clareli.mvp_video_record.View.AutoFitTextureView;
 
 public interface ICamera {
@@ -18,11 +21,9 @@ public interface ICamera {
     void startPreview();
     void startRecordingVideo(String filePath);
     void stopRecordingVideo();
-    void openCamera(int width, int height);
+    void openCamera(int width, int height, String cameraID, CameraManager manager, SurfaceTexture surfaceTexture);
     void closeCamera();
-    void sendTextureView(AutoFitTextureView textureView);
     void startBackgroundThread();
     void stopBackgroundThread();
-    void setInitSetting(Object systemService, int rotation, int orientation);
 
 }

@@ -37,10 +37,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 public class CameraClass implements ICamera {
-    private CameraDevice mCameraDevice  = null;
+    private CameraDevice mCameraDevice = null;
     private CameraCaptureSession mPreviewSession = null;
-//    private Size mPreviewSize = null;
-//    private Size mVideoSize = null;
     private MediaRecorder mMediaRecorder = null;
     private CaptureRequest.Builder mPreviewBuilder = null;
 
@@ -49,42 +47,19 @@ public class CameraClass implements ICamera {
 
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
     private final WeakReference<Activity> _messageViewReference;
-    private Integer mSensorOrientation = 0;
 
-    private static final int SENSOR_ORIENTATION_DEFAULT_DEGREES = 90;
-    private static final int SENSOR_ORIENTATION_INVERSE_DEGREES = 270;
-    private static final SparseIntArray DEFAULT_ORIENTATIONS = new SparseIntArray();
-    private static final SparseIntArray INVERSE_ORIENTATIONS = new SparseIntArray();
     private int textureViewWidth = 1920;
     private int textureViewHeight = 1080;
-    private AutoFitTextureView _textureView = null;
+//    private AutoFitTextureView _textureView = null;
     private String _videoFilePath = null;
     private IPresenterVideoPreviewRecord _presenterVideo = null;
-    private int _rotation;
-    private Object _systemService;
-    private int _orientation;
+    private SurfaceTexture _surfaceTexture;
 
-    static {
-        DEFAULT_ORIENTATIONS.append(Surface.ROTATION_0, 90);
-        DEFAULT_ORIENTATIONS.append(Surface.ROTATION_90, 0);
-        DEFAULT_ORIENTATIONS.append(Surface.ROTATION_180, 270);
-        DEFAULT_ORIENTATIONS.append(Surface.ROTATION_270, 180);
-    }
-
-    static {
-        INVERSE_ORIENTATIONS.append(Surface.ROTATION_0, 270);
-        INVERSE_ORIENTATIONS.append(Surface.ROTATION_90, 180);
-        INVERSE_ORIENTATIONS.append(Surface.ROTATION_180, 90);
-        INVERSE_ORIENTATIONS.append(Surface.ROTATION_270, 0);
-    }
-
-    public CameraClass(Activity activity, IPresenterVideoPreviewRecord presenterVideoPreviewRecord){
+    public CameraClass(Activity activity, IPresenterVideoPreviewRecord presenterVideoPreviewRecord) {
         _messageViewReference = new WeakReference<>(activity);
         _presenterVideo = presenterVideoPreviewRecord;
 
     }
-
-
 
     public void updatePreview() {
         if (null == mCameraDevice) {
@@ -163,7 +138,7 @@ public class CameraClass implements ICamera {
     //setup Video settings before recording
     @Override
     public void setupVideoRecord() {
-        if(_messageViewReference.get() == null)
+        if (_messageViewReference.get() == null)
             return;
 
         setAudioSource(MediaRecorder.AudioSource.MIC);
@@ -177,14 +152,7 @@ public class CameraClass implements ICamera {
 //        setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
         setVideoEncoder(MediaRecorder.VideoEncoder.MPEG_4_SP);
         setAudioEncoder(MediaRecorder.AudioEncoder.AMR_WB);
-        switch (mSensorOrientation) {
-            case SENSOR_ORIENTATION_DEFAULT_DEGREES:
-                mMediaRecorder.setOrientationHint(DEFAULT_ORIENTATIONS.get(_rotation));
-                break;
-            case SENSOR_ORIENTATION_INVERSE_DEGREES:
-                mMediaRecorder.setOrientationHint(INVERSE_ORIENTATIONS.get(_rotation));
-                break;
-        }
+
         try {
             mMediaRecorder.prepare();
 
@@ -196,16 +164,15 @@ public class CameraClass implements ICamera {
 
     @Override
     public void startPreview() {
-        if (null == mCameraDevice || !_textureView.isAvailable() /*|| null == mPreviewSize*/) {
+        if (null == mCameraDevice) {
             return;
         }
         closePreviewSession();
-        SurfaceTexture texture = _textureView.getSurfaceTexture();
-        assert texture != null;
-        texture.setDefaultBufferSize(textureViewWidth, textureViewHeight);
+        assert _surfaceTexture != null;
+        _surfaceTexture.setDefaultBufferSize(textureViewWidth, textureViewHeight);
         try {
             mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            Surface previewSurface = new Surface(texture);
+            Surface previewSurface = new Surface(_surfaceTexture);
             mPreviewBuilder.addTarget(previewSurface);
             mCameraDevice.createCaptureSession(Collections.singletonList(previewSurface), new CameraCaptureSession.StateCallback() {
                 @Override
@@ -217,7 +184,7 @@ public class CameraClass implements ICamera {
                 @Override
                 public void onConfigureFailed(@NonNull CameraCaptureSession session) {
                 }
-            },mBackgroundHandler);
+            }, mBackgroundHandler);
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -226,21 +193,20 @@ public class CameraClass implements ICamera {
 
     @Override
     public void startRecordingVideo(String filePath) {
-        if (null == mCameraDevice || !_textureView.isAvailable()) {
+        if (null == mCameraDevice) {
             return;
         }
         _videoFilePath = filePath;
         closePreviewSession();
         setupVideoRecord();
-        SurfaceTexture texture = _textureView.getSurfaceTexture();
-        assert texture != null;
-        texture.setDefaultBufferSize(textureViewWidth, textureViewHeight);
+        assert _surfaceTexture != null;
+        _surfaceTexture.setDefaultBufferSize(textureViewWidth, textureViewHeight);
         try {
             mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
             List<Surface> surfaces = new ArrayList<>();
 
             // Set up Surface for the camera preview
-            Surface previewSurface = new Surface(texture);
+            Surface previewSurface = new Surface(_surfaceTexture);
             surfaces.add(previewSurface);
             mPreviewBuilder.addTarget(previewSurface);
 
@@ -254,14 +220,14 @@ public class CameraClass implements ICamera {
                 public void onConfigured(@NonNull CameraCaptureSession session) {
                     mPreviewSession = session;
                     updatePreview();
-                   Thread thread = new Thread(){
-                       @Override
-                       public void run() {
-                           // Start recording
-                           mMediaRecorder.start();
+                    Thread thread = new Thread() {
+                        @Override
+                        public void run() {
+                            // Start recording
+                            mMediaRecorder.start();
 
-                       }
-                   };
+                        }
+                    };
                     thread.start();
 
                 }
@@ -296,48 +262,32 @@ public class CameraClass implements ICamera {
 
     @SuppressLint("MissingPermission")
     @Override
-    public void openCamera(int width, int height) {
-        if (null == _messageViewReference.get()) {
+    public void openCamera(int width, int height, String cameraId, CameraManager manager, SurfaceTexture surfaceTexture) {
+        if ((null == _messageViewReference.get()) || (cameraId == null)) {
             return;
         }
 
-        CameraManager manager = (CameraManager) _systemService;
         try {
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
 
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
-            String cameraId = manager.getCameraIdList()[0];
-            // Choose the sizes for camera preview and video recording
-            CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
-            StreamConfigurationMap map = characteristics
-                    .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-            mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
-            if (map == null) {
-                throw new RuntimeException("Cannot get available preview/video sizes");
-            }
-
             mMediaRecorder = new MediaRecorder();
+            _surfaceTexture = surfaceTexture;
             manager.openCamera(cameraId, mStateCallback, null);
 
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         } catch (CameraAccessException e) {
-            //return Open Error to presenter
-            _presenterVideo.cameraOpenError();
-            e.printStackTrace();
-
-        }catch (NullPointerException e) {
             e.printStackTrace();
         }
-        catch (InterruptedException e) {
-            throw new RuntimeException("Interrupted while trying to lock camera opening.");
 
-        }
 
     }
 
     @Override
     public void closeCamera() {
-        if(mCameraDevice == null)
+        if (mCameraDevice == null)
             return;
 
         try {
@@ -359,21 +309,14 @@ public class CameraClass implements ICamera {
 
     }
 
-    @Override
-    public void sendTextureView(AutoFitTextureView textureView) {
-        _textureView = textureView;
-    }
 
-
-
-    private CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback(){
+    private CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
 
         @Override
         public void onOpened(@NonNull CameraDevice camera) {
             mCameraDevice = camera;
             startPreview();
             mCameraOpenCloseLock.release();
-
 
         }
 
@@ -413,7 +356,7 @@ public class CameraClass implements ICamera {
 
     @Override
     public void stopBackgroundThread() {
-        if(mBackgroundThread != null) {
+        if (mBackgroundThread != null) {
             mBackgroundThread.quitSafely();
             try {
                 mBackgroundThread.join();
@@ -423,13 +366,6 @@ public class CameraClass implements ICamera {
                 e.printStackTrace();
             }
         }
-    }
-
-    @Override
-    public void setInitSetting(Object systemService, int rotation, int orientation) {
-        _rotation = rotation;
-        _systemService = systemService;
-        _orientation = orientation;
     }
 
 

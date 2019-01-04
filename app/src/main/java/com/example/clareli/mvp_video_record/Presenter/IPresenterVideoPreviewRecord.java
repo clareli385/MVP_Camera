@@ -10,7 +10,6 @@ public interface IPresenterVideoPreviewRecord {
     void videoPreviewStart(AutoFitTextureView textureView, IViewVideoRecordCallback iViewVideoRecordCallback);
     void closeCamera();
     void cameraOpenError();
-    void getInitData();
     void startBackground();
     void viewShowMsg(String msg);
 }

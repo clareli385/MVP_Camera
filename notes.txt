@@ -1,0 +1,17 @@
+/*my_video_record.mp4*/
+setAudioSource(MediaRecorder.AudioSource.MIC);
+setVideoSource(MediaRecorder.VideoSource.SURFACE);
+setVideoOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+setVideoEncodingBitRate(10000000);
+setVideoFrameRate(30);
+setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+
+/*video_record.3gp*/
+setAudioSource(MediaRecorder.AudioSource.MIC);
+setVideoSource(MediaRecorder.VideoSource.SURFACE);
+setVideoOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+setVideoEncodingBitRate(10000000);
+setVideoFrameRate(30);
+setVideoEncoder(MediaRecorder.VideoEncoder.MPEG_4_SP);
+setAudioEncoder(MediaRecorder.AudioEncoder.AMR_WB);

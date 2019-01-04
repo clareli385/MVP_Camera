@@ -3,7 +3,7 @@ package com.example.clareli.mvp_video_record.Model;
 
 import com.example.clareli.mvp_video_record.View.AutoFitTextureView;
 
-public interface IVideoRecord {
+public interface ICamera {
     void setAudioSource(int micSource);
     void setVideoSource(int surface);
     void setVideoOutputFormat(int outputFormat); //MediaRecorder.OutputFormat.MPEG_4
@@ -24,6 +24,5 @@ public interface IVideoRecord {
     void startBackgroundThread();
     void stopBackgroundThread();
     void setInitSetting(Object systemService, int rotation, int orientation);
-    void configureTransform(int viewWidth, int viewHeight);
 
 }

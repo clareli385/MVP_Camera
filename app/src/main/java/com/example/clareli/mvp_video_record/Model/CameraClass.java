@@ -36,11 +36,11 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-public class VideoRecordClass implements IVideoRecord{
+public class CameraClass implements ICamera {
     private CameraDevice mCameraDevice  = null;
     private CameraCaptureSession mPreviewSession = null;
-    private Size mPreviewSize = null;
-    private Size mVideoSize = null;
+//    private Size mPreviewSize = null;
+//    private Size mVideoSize = null;
     private MediaRecorder mMediaRecorder = null;
     private CaptureRequest.Builder mPreviewBuilder = null;
 
@@ -58,7 +58,6 @@ public class VideoRecordClass implements IVideoRecord{
     private int textureViewWidth = 1920;
     private int textureViewHeight = 1080;
     private AutoFitTextureView _textureView = null;
-//    private TextureView _textureView = null;
     private String _videoFilePath = null;
     private IPresenterVideoPreviewRecord _presenterVideo = null;
     private int _rotation;
@@ -79,7 +78,7 @@ public class VideoRecordClass implements IVideoRecord{
         INVERSE_ORIENTATIONS.append(Surface.ROTATION_270, 0);
     }
 
-    public VideoRecordClass(Activity activity, IPresenterVideoPreviewRecord presenterVideoPreviewRecord){
+    public CameraClass(Activity activity, IPresenterVideoPreviewRecord presenterVideoPreviewRecord){
         _messageViewReference = new WeakReference<>(activity);
         _presenterVideo = presenterVideoPreviewRecord;
 
@@ -173,7 +172,7 @@ public class VideoRecordClass implements IVideoRecord{
         setVideoOutputFile(_videoFilePath);
         setVideoEncodingBitRate(10000000);
         setVideoFrameRate(30);
-        setVideoSize(mVideoSize.getWidth(), mVideoSize.getHeight());
+        setVideoSize(textureViewWidth, textureViewHeight);
 //        setVideoEncoder(MediaRecorder.VideoEncoder.H264);
 //        setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
         setVideoEncoder(MediaRecorder.VideoEncoder.MPEG_4_SP);
@@ -197,13 +196,13 @@ public class VideoRecordClass implements IVideoRecord{
 
     @Override
     public void startPreview() {
-        if (null == mCameraDevice || !_textureView.isAvailable() || null == mPreviewSize) {
+        if (null == mCameraDevice || !_textureView.isAvailable() /*|| null == mPreviewSize*/) {
             return;
         }
         closePreviewSession();
         SurfaceTexture texture = _textureView.getSurfaceTexture();
         assert texture != null;
-        texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+        texture.setDefaultBufferSize(textureViewWidth, textureViewHeight);
         try {
             mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             Surface previewSurface = new Surface(texture);
@@ -217,7 +216,6 @@ public class VideoRecordClass implements IVideoRecord{
 
                 @Override
                 public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-                    Log.i("clare","Preview Fail!!");
                 }
             },mBackgroundHandler);
 
@@ -228,7 +226,7 @@ public class VideoRecordClass implements IVideoRecord{
 
     @Override
     public void startRecordingVideo(String filePath) {
-        if (null == mCameraDevice || !_textureView.isAvailable() || null == mPreviewSize) {
+        if (null == mCameraDevice || !_textureView.isAvailable()) {
             return;
         }
         _videoFilePath = filePath;
@@ -236,7 +234,7 @@ public class VideoRecordClass implements IVideoRecord{
         setupVideoRecord();
         SurfaceTexture texture = _textureView.getSurfaceTexture();
         assert texture != null;
-        texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+        texture.setDefaultBufferSize(textureViewWidth, textureViewHeight);
         try {
             mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
             List<Surface> surfaces = new ArrayList<>();
@@ -319,17 +317,6 @@ public class VideoRecordClass implements IVideoRecord{
                 throw new RuntimeException("Cannot get available preview/video sizes");
             }
 
-            mVideoSize = chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
-            mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
-                    width, height, mVideoSize);
-            if (_orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                _textureView.setAspectRatio(mPreviewSize.getWidth(), mPreviewSize.getHeight());
-
-            } else {
-                _textureView.setAspectRatio(mPreviewSize.getHeight(), mPreviewSize.getWidth());
-            }
-
-            configureTransform(width, height);
             mMediaRecorder = new MediaRecorder();
             manager.openCamera(cameraId, mStateCallback, null);
 
@@ -386,9 +373,7 @@ public class VideoRecordClass implements IVideoRecord{
             mCameraDevice = camera;
             startPreview();
             mCameraOpenCloseLock.release();
-            if (null != _textureView) {
-                configureTransform(textureViewWidth, textureViewHeight);
-            }
+
 
         }
 
@@ -447,66 +432,5 @@ public class VideoRecordClass implements IVideoRecord{
         _orientation = orientation;
     }
 
-    @Override
-    public void configureTransform(int viewWidth, int viewHeight) {
-        if (null == _textureView || null == mPreviewSize || null == _messageViewReference.get()) {
-            return;
-        }
-        Matrix matrix = new Matrix();
-        RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
-        RectF bufferRect = new RectF(0, 0, mPreviewSize.getHeight(), mPreviewSize.getWidth());
-        float centerX = viewRect.centerX();
-        float centerY = viewRect.centerY();
-        if (Surface.ROTATION_90 == _rotation || Surface.ROTATION_270 == _rotation) {
-            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
-            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
-            float scale = Math.max(
-                    (float) viewHeight / mPreviewSize.getHeight(),
-                    (float) viewWidth / mPreviewSize.getWidth());
-            matrix.postScale(scale, scale, centerX, centerY);
-            matrix.postRotate(90 * (_rotation - 2), centerX, centerY);
-        }
-        _textureView.setTransform(matrix);
-    }
-
-    private static Size chooseVideoSize(Size[] choices) {
-        for (Size size : choices) {
-            if (size.getWidth() == size.getHeight() * 4 / 3 && size.getWidth() <= 1080) {
-                return size;
-            }
-        }
-        return choices[choices.length - 1];
-    }
-
-    private static Size chooseOptimalSize(Size[] choices, int width, int height, Size aspectRatio) {
-        // Collect the supported resolutions that are at least as big as the preview Surface
-        List<Size> bigEnough = new ArrayList<>();
-        int w = aspectRatio.getWidth();
-        int h = aspectRatio.getHeight();
-        for (Size option : choices) {
-            if (option.getHeight() == option.getWidth() * h / w &&
-                    option.getWidth() >= width && option.getHeight() >= height) {
-                bigEnough.add(option);
-            }
-        }
-
-        // Pick the smallest of those, assuming we found any
-        if (bigEnough.size() > 0) {
-            return Collections.min(bigEnough, new CompareSizesByArea());
-        } else {
-            return choices[0];
-        }
-    }
-
-    static class CompareSizesByArea implements Comparator<Size> {
-
-        @Override
-        public int compare(Size lhs, Size rhs) {
-            // We cast here to ensure the multiplications won't overflow
-            return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
-                    (long) rhs.getWidth() * rhs.getHeight());
-        }
-
-    }
 
 }

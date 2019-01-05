@@ -5,13 +5,15 @@ import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraManager;
+import android.util.Log;
 import android.view.TextureView;
 
 import com.example.clareli.mvp_video_record.MainActivity;
 import com.example.clareli.mvp_video_record.Model.ICamera;
 import com.example.clareli.mvp_video_record.Model.CameraClass;
 import com.example.clareli.mvp_video_record.View.AutoFitTextureView;
-import com.example.clareli.mvp_video_record.View.IViewVideoRecordCallback;
+import com.example.clareli.mvp_video_record.View.IViewErrorCallback;
+import com.example.clareli.mvp_video_record.View.ViewErrorCallback;
 
 import java.lang.ref.WeakReference;
 
@@ -22,16 +24,19 @@ import static com.example.clareli.mvp_video_record.Util.IConstant.REQUEST_PERMIS
 import static com.example.clareli.mvp_video_record.Util.PermissionCheck.hasPermissionsGranted;
 import static com.example.clareli.mvp_video_record.Util.PermissionCheck.requestPermission;
 
-public class PresenterVideoPreviewRecord implements IPresenterVideoPreviewRecord {
+public class PresenterCameraControl implements IPresenterCameraControl, IInterfaceCameraCallback {
     private final WeakReference<Activity> _messageViewReference;
     private ICamera iCamera;
-    private IViewVideoRecordCallback _iViewVideoRecordCallback;
+    private PresenterCameraCallback _cameraCallback;
     private Object _systemService = null;
     private String[] cameraPermission = {WRITE_EXTERNAL_STORAGE, CAMERA, RECORD_AUDIO};
+    private ViewErrorCallback _viewErrorCallback;
 
-    public PresenterVideoPreviewRecord(Activity activity) {
+    public PresenterCameraControl(Activity activity, ViewErrorCallback viewErrorCallback) {
         _messageViewReference = new WeakReference<>(activity);
-        iCamera = new CameraClass(_messageViewReference.get(), this);
+        _cameraCallback = new PresenterCameraCallback(this);
+        iCamera = new CameraClass(_messageViewReference.get(), _cameraCallback);
+        _viewErrorCallback = viewErrorCallback;
     }
 
     @Override
@@ -46,8 +51,7 @@ public class PresenterVideoPreviewRecord implements IPresenterVideoPreviewRecord
 
 
     @Override
-    public void videoPreviewStart(AutoFitTextureView textureView, IViewVideoRecordCallback iViewVideoRecordCallback) {
-        _iViewVideoRecordCallback = iViewVideoRecordCallback;
+    public void videoPreviewStart(AutoFitTextureView textureView, IViewErrorCallback iViewErrorCallback) {
         if (textureView.isAvailable()) {
             if (hasPermissionsGranted(_messageViewReference.get(), cameraPermission)) {
                 String cameraId = selectCamera();
@@ -122,10 +126,50 @@ public class PresenterVideoPreviewRecord implements IPresenterVideoPreviewRecord
         iCamera.startBackgroundThread();
     }
 
+
     @Override
-    public void viewShowMsg(String msg) {
-        _iViewVideoRecordCallback.showRecordStatus(msg);
+    public void errorCameraCallback() {
+        Log.i("CLE", "errorCameraCallback....");
+        _viewErrorCallback.viewShowErrorDialog("open Camera error");
+    }
+
+    @Override
+    public void errorCameraRecordCallback() {
+        Log.i("CLE", "errorCameraRecordCallback....");
+        _viewErrorCallback.viewShowErrorDialog("Camera record error");
+
 
     }
 
+    @Override
+    public void completedCameraCallback() {
+        Log.i("CLE", "completedCameraCallback....");
+
+    }
+
+    @Override
+    public void completedCameraRecordCallback() {
+        Log.i("CLE", "completedCameraRecordCallback....");
+
+    }
+
+    @Override
+    public void errorEncoderCallback() {
+
+    }
+
+    @Override
+    public void completedEncoderCallback() {
+
+    }
+
+    @Override
+    public void errorDecoderCallback() {
+
+    }
+
+    @Override
+    public void completedDecoderCallback() {
+
+    }
 }

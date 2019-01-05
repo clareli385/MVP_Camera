@@ -2,14 +2,13 @@ package com.example.clareli.mvp_video_record.Presenter;
 
 
 import com.example.clareli.mvp_video_record.View.AutoFitTextureView;
-import com.example.clareli.mvp_video_record.View.IViewVideoRecordCallback;
+import com.example.clareli.mvp_video_record.View.IViewErrorCallback;
 
-public interface IPresenterVideoPreviewRecord {
+public interface IPresenterCameraControl {
     void videoRecordStart(String filePath);
     void videoRecordStop();
-    void videoPreviewStart(AutoFitTextureView textureView, IViewVideoRecordCallback iViewVideoRecordCallback);
+    void videoPreviewStart(AutoFitTextureView textureView, IViewErrorCallback iViewErrorCallback);
     void closeCamera();
     void cameraOpenError();
     void startBackground();
-    void viewShowMsg(String msg);
 }

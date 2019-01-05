@@ -6,13 +6,15 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
-import com.example.clareli.mvp_video_record.Presenter.IPresenterVideoPreviewRecord;
-import com.example.clareli.mvp_video_record.Presenter.PresenterVideoPreviewRecord;
+import com.example.clareli.mvp_video_record.Presenter.IPresenterCameraControl;
+import com.example.clareli.mvp_video_record.Presenter.PresenterCameraControl;
 import com.example.clareli.mvp_video_record.View.AutoFitTextureView;
-import com.example.clareli.mvp_video_record.View.IViewVideoRecordCallback;
+import com.example.clareli.mvp_video_record.View.IViewErrorCallback;
+import com.example.clareli.mvp_video_record.View.ViewErrorCallback;
 
 import java.io.File;
 
@@ -22,16 +24,17 @@ import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static com.example.clareli.mvp_video_record.Util.IConstant.REQUEST_PERMISSION_CODE;
 import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_PERMISSIONS;
 
-public class MainActivity extends AppCompatActivity implements IViewVideoRecordCallback {
+public class MainActivity extends AppCompatActivity implements IViewErrorCallback {
     private AutoFitTextureView mTextureView;
     private Button recordStartBtn;
-    private IPresenterVideoPreviewRecord iPresenterVideoPreviewRecord = null;
-//    private static String _fileName = "my_video_record.mp4";
-private static String _fileName = "video_record.3gp";
+    private IPresenterCameraControl iPresenterCameraControl = null;
+    //    private static String _fileName = "my_video_record.mp4";
+    private static String _fileName = "video_record.3gp";
 
     private String _filePath = null;
     private File _fileAudio = null;
     private boolean mIsRecordingVideo = false;
+    private ViewErrorCallback viewErrorCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,27 +45,26 @@ private static String _fileName = "video_record.3gp";
         initPresenter();
 
 
-
     }
 
 
     @Override
     protected void onResume() {
         super.onResume();
-        iPresenterVideoPreviewRecord.startBackground();
-        iPresenterVideoPreviewRecord.videoPreviewStart(mTextureView, this);
+        iPresenterCameraControl.startBackground();
+        iPresenterCameraControl.videoPreviewStart(mTextureView, this);
 
     }
 
     @Override
     protected void onPause() {
-        if(iPresenterVideoPreviewRecord != null)
-            iPresenterVideoPreviewRecord.closeCamera();
+        if (iPresenterCameraControl != null)
+            iPresenterCameraControl.closeCamera();
         super.onPause();
 
     }
 
-    public void findViews(){
+    public void findViews() {
         mTextureView = findViewById(R.id.texture);
         recordStartBtn = findViewById(R.id.video_record_start);
         recordStartBtn.setOnClickListener(recordClickListener);
@@ -73,31 +75,31 @@ private static String _fileName = "video_record.3gp";
         }
     }
 
-    public void initPresenter(){
-        iPresenterVideoPreviewRecord = new PresenterVideoPreviewRecord(this);
+    public void initPresenter() {
+        viewErrorCallback = new ViewErrorCallback(this);
+        iPresenterCameraControl = new PresenterCameraControl(this, viewErrorCallback);
 
     }
 
     View.OnClickListener recordClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            switch (v.getId()){
+            switch (v.getId()) {
                 case R.id.video_record_start:
-                    if(mIsRecordingVideo == false) {
+                    if (mIsRecordingVideo == false) {
                         mIsRecordingVideo = true;
                         recordStartBtn.setText("Stop");
-                        iPresenterVideoPreviewRecord.videoRecordStart(_fileAudio.getAbsolutePath());
+                        iPresenterCameraControl.videoRecordStart(_fileAudio.getAbsolutePath());
 
                     } else {
                         mIsRecordingVideo = false;
                         recordStartBtn.setText("Record");
-                        iPresenterVideoPreviewRecord.videoRecordStop();
+                        iPresenterCameraControl.videoRecordStop();
                     }
                     break;
             }
         }
     };
-
 
 
     public void requestPermission() {
@@ -109,7 +111,7 @@ private static String _fileName = "video_record.3gp";
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if(requestCode == REQUEST_PERMISSION_CODE){
+        if (requestCode == REQUEST_PERMISSION_CODE) {
             if (grantResults.length == VIDEO_PERMISSIONS.length) {
                 for (int result : grantResults) {
                     if (result != PackageManager.PERMISSION_GRANTED) {
@@ -121,12 +123,13 @@ private static String _fileName = "video_record.3gp";
             } else {
                 // permission denied
             }
-        } else{
+        } else {
             onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
 
     @Override
-    public void showRecordStatus(String msg) {
+    public void showErrorMsg(String msg) {
+        Log.i("CLE", "error:" + msg);
     }
 }

@@ -20,4 +20,6 @@ import android.support.v4.app.ActivityCompat;
         ActivityCompat.requestPermissions(activity, permissionArray, permission_code);
     }
 
+
+
 }

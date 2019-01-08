@@ -11,6 +11,13 @@
         android:layout_marginStart="0dp"
         android:layout_marginTop="0dp"
         android:visibility="visible" />
+    <ImageView
+        android:id="@+id/show_photo"
+        android:layout_width="180dp"
+        android:layout_height="320dp"
+        android:visibility="gone"
+        android:layout_centerInParent="true"
+        android:scaleType="centerCrop" />
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -24,7 +31,7 @@
         android:background="#4285f4">
 
         <Button
-            android:id="@+id/video_record_start"
+            android:id="@+id/take_photo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"

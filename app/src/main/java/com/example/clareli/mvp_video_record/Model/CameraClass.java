@@ -3,16 +3,12 @@ package com.example.clareli.mvp_video_record.Model;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
-import android.media.Image;
-import android.media.ImageReader;
 import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -21,9 +17,7 @@ import android.support.annotation.NonNull;
 
 import com.example.clareli.mvp_video_record.Presenter.PresenterCameraCallback;
 
-import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -34,7 +28,7 @@ public class CameraClass implements ICamera {
     private CameraDevice mCameraDevice = null;
     private CameraCaptureSession mPreviewSession = null;
     private MediaRecorder mMediaRecorder = null;
-    private CaptureRequest.Builder mPreviewBuilder = null;
+    private CaptureRequest.Builder _previewBuilder = null;
 
     private HandlerThread mBackgroundThread = null;
     private Handler mBackgroundHandler = null;
@@ -44,11 +38,8 @@ public class CameraClass implements ICamera {
 
     private int textureViewWidth = 1920;
     private int textureViewHeight = 1080;
-    private String _videoFilePath = null;
     private PresenterCameraCallback _cameraCallback = null;
-    private SurfaceTexture _surfaceTexture;
-    private ImageReader _imageReader;
-    private ByteBuffer _previewBuffer;
+    private SurfaceTexture _previewSurfaceTexture;
 
 
     public CameraClass(Activity activity, PresenterCameraCallback cameraCallback) {
@@ -57,15 +48,17 @@ public class CameraClass implements ICamera {
 
     }
 
+    //for record and preview
     public void updatePreview() {
         if (null == mCameraDevice) {
             return;
         }
         try {
-            setUpCaptureRequestBuilder(mPreviewBuilder);
+            setUpCaptureRequestBuilder(_previewBuilder);
             HandlerThread thread = new HandlerThread("CameraPreview");
             thread.start();
-            mPreviewSession.setRepeatingRequest(mPreviewBuilder.build(), null, mBackgroundHandler);
+            mPreviewSession.setRepeatingRequest(_previewBuilder.build(), null, mBackgroundHandler);
+            _cameraCallback.getCameraDevice(mCameraDevice);
         } catch (CameraAccessException e) {
             _cameraCallback.errorPreview();
             e.printStackTrace();
@@ -74,44 +67,7 @@ public class CameraClass implements ICamera {
     }
 
     private void setUpCaptureRequestBuilder(CaptureRequest.Builder builder) {
-        builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-    }
-
-    @Override
-    public void setAudioSource(int micSource) {
-        mMediaRecorder.setAudioSource(micSource);
-    }
-
-    @Override
-    public void setVideoSource(int surface) {
-        mMediaRecorder.setVideoSource(surface);
-
-    }
-
-    @Override
-    public void setVideoOutputFormat(int outputFormat) {
-        mMediaRecorder.setOutputFormat(outputFormat);
-    }
-
-    @Override
-    public void setVideoOutputFile(String outputPath) {
-        mMediaRecorder.setOutputFile(outputPath);
-    }
-
-    @Override
-    public void setVideoEncodingBitRate(int rate) {
-        mMediaRecorder.setVideoEncodingBitRate(rate);
-    }
-
-    @Override
-    public void setVideoFrameRate(int rate) {
-        mMediaRecorder.setVideoFrameRate(rate);
-
-    }
-
-    @Override
-    public void setVideoSize(int width, int height) {
-        mMediaRecorder.setVideoSize(width, height);
+        builder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
     }
 
     @Override
@@ -120,67 +76,36 @@ public class CameraClass implements ICamera {
         textureViewHeight = height;
     }
 
-    @Override
-    public void setVideoEncoder(int videoEncoder) {
-        mMediaRecorder.setVideoEncoder(videoEncoder);
-
-    }
 
     @Override
-    public void setAudioEncoder(int audioEncoder) {
-        mMediaRecorder.setAudioEncoder(audioEncoder);
-
-    }
-
-    //setup Video settings before recording
-    @Override
-    public void setupVideoRecord() {
-        if (_messageViewReference.get() == null)
-            return;
-
-        setAudioSource(MediaRecorder.AudioSource.MIC);
-        setVideoSource(MediaRecorder.VideoSource.SURFACE);
-        setVideoOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-        setVideoOutputFile(_videoFilePath);
-        setVideoEncodingBitRate(10000000);
-        setVideoFrameRate(30);
-        setVideoSize(textureViewWidth, textureViewHeight);
-//        setVideoEncoder(MediaRecorder.VideoEncoder.H264);
-//        setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-        setVideoEncoder(MediaRecorder.VideoEncoder.MPEG_4_SP);
-        setAudioEncoder(MediaRecorder.AudioEncoder.AMR_WB);
-
-        try {
-            mMediaRecorder.prepare();
-
-        } catch (IOException e) {
-            _cameraCallback.errorRecord();
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void startPreview() {
+    public void startPreview(Surface previewSurface) {
         if (null == mCameraDevice) {
             return;
         }
-        closePreviewSession();
-        assert _surfaceTexture != null;
-        _surfaceTexture.setDefaultBufferSize(textureViewWidth, textureViewHeight);
-        _imageReader = ImageReader.newInstance(textureViewWidth, textureViewHeight,
-                ImageFormat.JPEG, 2);
-        _imageReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
 
         try {
+            closePreviewSession();
+            assert _previewSurfaceTexture != null;
+            _previewSurfaceTexture.setDefaultBufferSize(textureViewWidth, textureViewHeight);
+            _previewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            _previewBuilder.addTarget(previewSurface);
 
-            mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            Surface previewSurface = new Surface(_surfaceTexture);
-            mPreviewBuilder.addTarget(previewSurface);
             mCameraDevice.createCaptureSession(Collections.singletonList(previewSurface), new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {
                     mPreviewSession = session;
-                    updatePreview();
+                    try {
+                        // Auto focus should be continuous for camera preview.
+                        _previewBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+                                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+
+                        // Finally, we start displaying the camera preview.
+                        mPreviewSession.setRepeatingRequest(_previewBuilder.build(),
+                                null, mBackgroundHandler);
+                    } catch (CameraAccessException e) {
+                        _cameraCallback.errorPreview();
+                        e.printStackTrace();
+                    }
                 }
 
                 @Override
@@ -192,86 +117,6 @@ public class CameraClass implements ICamera {
             _cameraCallback.errorPreview();
             e.printStackTrace();
         }
-    }
-
-    ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
-        @Override
-        public void onImageAvailable(ImageReader reader) {
-            Image img = reader.acquireNextImage();
-            _previewBuffer = img.getPlanes()[0].getBuffer();
-
-            img.close();
-        }
-    };
-
-    @Override
-    public void startRecordingVideo(String filePath) {
-        if (null == mCameraDevice) {
-            return;
-        }
-        _videoFilePath = filePath;
-        closePreviewSession();
-        setupVideoRecord();
-        assert _surfaceTexture != null;
-        _surfaceTexture.setDefaultBufferSize(textureViewWidth, textureViewHeight);
-        try {
-            mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
-            List<Surface> surfaces = new ArrayList<>();
-
-            // Set up Surface for the camera preview
-            Surface previewSurface = new Surface(_surfaceTexture);
-            surfaces.add(previewSurface);
-            mPreviewBuilder.addTarget(previewSurface);
-
-            // Set up Surface for the MediaRecorder
-            Surface recorderSurface = mMediaRecorder.getSurface();
-            surfaces.add(recorderSurface);
-            mPreviewBuilder.addTarget(recorderSurface);
-
-            mCameraDevice.createCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
-                @Override
-                public void onConfigured(@NonNull CameraCaptureSession session) {
-                    mPreviewSession = session;
-                    updatePreview();
-                    Thread thread = new Thread() {
-                        @Override
-                        public void run() {
-                            // Start recording
-                            mMediaRecorder.start();
-
-                        }
-                    };
-                    thread.start();
-
-                }
-
-                @Override
-                public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-                }
-            }, mBackgroundHandler);
-
-        } catch (CameraAccessException e) {
-            _cameraCallback.errorRecord();
-            e.printStackTrace();
-        }
-
-    }
-
-
-    @Override
-    public void stopRecordingVideo() {
-
-        if(mMediaRecorder != null ) {
-            // Stop recording
-
-            mMediaRecorder.stop();
-            mMediaRecorder.reset();
-
-            _videoFilePath = null;
-        }
-        _cameraCallback.completedRecord();
-        startPreview();
-
     }
 
     @SuppressLint("MissingPermission")
@@ -286,8 +131,7 @@ public class CameraClass implements ICamera {
 
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
-            mMediaRecorder = new MediaRecorder();
-            _surfaceTexture = surfaceTexture;
+            _previewSurfaceTexture = surfaceTexture;
             manager.openCamera(cameraId, mStateCallback, null);
 
         } catch (InterruptedException e) {
@@ -308,7 +152,10 @@ public class CameraClass implements ICamera {
 
         try {
             mCameraOpenCloseLock.acquire();
-            closePreviewSession();
+            if (mPreviewSession != null) {
+                mPreviewSession.close();
+                mPreviewSession = null;
+            }
             if (null != mCameraDevice) {
                 mCameraDevice.close();
                 mCameraDevice = null;
@@ -332,8 +179,11 @@ public class CameraClass implements ICamera {
         @Override
         public void onOpened(@NonNull CameraDevice camera) {
             mCameraDevice = camera;
-            startPreview();
+            _cameraCallback.getCameraDevice(mCameraDevice);
+            Surface previewSurface = new Surface(_previewSurfaceTexture);
+            startPreview(previewSurface);
             mCameraOpenCloseLock.release();
+
         }
 
         @Override
@@ -341,10 +191,6 @@ public class CameraClass implements ICamera {
             mCameraOpenCloseLock.release();
             camera.close();
             mCameraDevice = null;
-            if(_imageReader != null) {
-                _imageReader.close();
-                _imageReader = null;
-            }
         }
 
         @Override
@@ -352,24 +198,13 @@ public class CameraClass implements ICamera {
             mCameraOpenCloseLock.release();
             camera.close();
             mCameraDevice = null;
-            if(_imageReader != null) {
-                _imageReader.close();
-                _imageReader = null;
-            }
+
             Activity activity = _messageViewReference.get();
             if (null != activity) {
                 _cameraCallback.errorPreview();
             }
         }
     };
-
-
-    public void closePreviewSession() {
-        if (mPreviewSession != null) {
-            mPreviewSession.close();
-            mPreviewSession = null;
-        }
-    }
 
     @Override
     public void startBackgroundThread() {
@@ -392,5 +227,40 @@ public class CameraClass implements ICamera {
         }
     }
 
+    @Override
+    public void closePreviewSession() {
+        if (mPreviewSession != null) {
+            mPreviewSession.close();
+            mPreviewSession = null;
+        }
+    }
+
+    @Override
+    public void createCaptureSession(Surface previewSurface , Surface recorderSurface) {
+        List<Surface> surfacesList = new ArrayList<>();
+        surfacesList.add(previewSurface);
+        surfacesList.add(recorderSurface);
+        try {
+            _previewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            _previewBuilder.addTarget(previewSurface);
+            _previewBuilder.addTarget(recorderSurface);
+            mCameraDevice.createCaptureSession(surfacesList, new CameraCaptureSession.StateCallback(){
+
+                @Override
+                public void onConfigured(@NonNull CameraCaptureSession session) {
+                    mPreviewSession = session;
+                    updatePreview();
+                }
+
+                @Override
+                public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+
+                }
+            }, mBackgroundHandler);
+        } catch (CameraAccessException e) {
+            _cameraCallback.errorPreview();
+            e.printStackTrace();
+        }
+    }
 
 }

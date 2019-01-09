@@ -127,23 +127,17 @@ public class CameraClass implements ICamera {
         }
 
         try {
-            if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
-
-                throw new RuntimeException("Time out waiting to lock camera opening.");
-            }
             _previewSurfaceTexture = surfaceTexture;
             manager.openCamera(cameraId, mStateCallback, null);
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            _cameraCallback.errorPreview();
-        } catch (CameraAccessException e) {
+        }  catch (CameraAccessException e) {
             e.printStackTrace();
             _cameraCallback.errorPreview();
         }
 
 
     }
+
+
 
     @Override
     public void closeCamera() {
@@ -260,6 +254,20 @@ public class CameraClass implements ICamera {
         } catch (CameraAccessException e) {
             _cameraCallback.errorPreview();
             e.printStackTrace();
+        }
+    }
+
+    @Override
+    public boolean tryToGetAcquire() {
+        try {
+            if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
+                return true;
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            return true;
         }
     }
 

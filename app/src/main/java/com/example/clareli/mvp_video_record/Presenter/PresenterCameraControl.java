@@ -104,7 +104,9 @@ public class PresenterCameraControl implements IPresenterCameraControl, IInterfa
 
         CameraManager manager = (CameraManager) _systemService;
         try {
-            cameraId = manager.getCameraIdList()[0];
+            if(_iCamera.tryToGetAcquire()) {
+                cameraId = manager.getCameraIdList()[0];
+            }
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }

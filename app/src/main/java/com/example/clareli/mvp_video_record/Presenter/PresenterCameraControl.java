@@ -7,7 +7,6 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 
-import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
 
@@ -74,7 +73,7 @@ public class PresenterCameraControl implements IPresenterCameraControl, IInterfa
 
     @Override
     public void videoRecordStop() {
-        _cameraCodec.stopCodec();
+        _cameraCodec.stopRecord();
         _iCamera.startPreview(previewSurface);
     }
 
@@ -144,7 +143,7 @@ public class PresenterCameraControl implements IPresenterCameraControl, IInterfa
 
         @Override
         public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-            _cameraCodec.stopCodec();
+            _cameraCodec.stopRecord();
 //            return false;
             return true;
         }

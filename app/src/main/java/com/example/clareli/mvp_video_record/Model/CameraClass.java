@@ -8,6 +8,7 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.media.MediaRecorder;
 import android.os.Handler;
@@ -44,7 +45,7 @@ public class CameraClass implements ICamera {
 
     public CameraClass(Activity activity, PresenterCameraCallback cameraCallback) {
         _messageViewReference = new WeakReference<>(activity);
-        _cameraCallback= cameraCallback;
+        _cameraCallback = cameraCallback;
 
     }
 
@@ -96,8 +97,7 @@ public class CameraClass implements ICamera {
                     mPreviewSession = session;
                     try {
                         // Auto focus should be continuous for camera preview.
-                        _previewBuilder.set(CaptureRequest.CONTROL_AF_MODE,
-                                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                        _previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
 
                         // Finally, we start displaying the camera preview.
                         mPreviewSession.setRepeatingRequest(_previewBuilder.build(),
@@ -236,15 +236,15 @@ public class CameraClass implements ICamera {
     }
 
     @Override
-    public void createCaptureSession(Surface previewSurface , Surface recorderSurface) {
+    public void createCaptureSession(Surface previewSurface, Surface recorderSurface) {
         List<Surface> surfacesList = new ArrayList<>();
-        surfacesList.add(previewSurface);
-        surfacesList.add(recorderSurface);
         try {
             _previewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            surfacesList.add(previewSurface);
             _previewBuilder.addTarget(previewSurface);
+            surfacesList.add(recorderSurface);
             _previewBuilder.addTarget(recorderSurface);
-            mCameraDevice.createCaptureSession(surfacesList, new CameraCaptureSession.StateCallback(){
+            mCameraDevice.createCaptureSession(surfacesList, new CameraCaptureSession.StateCallback() {
 
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {

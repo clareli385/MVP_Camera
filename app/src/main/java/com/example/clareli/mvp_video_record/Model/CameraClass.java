@@ -10,15 +10,21 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
+import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
+import android.media.MediaFormat;
 import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.util.Log;
 import android.view.Surface;
 import android.support.annotation.NonNull;
 
 import com.example.clareli.mvp_video_record.Presenter.PresenterCameraCallback;
 
+import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,6 +39,7 @@ public class CameraClass implements ICamera {
 
     private HandlerThread mBackgroundThread = null;
     private Handler mBackgroundHandler = null;
+    MediaCodec mediaCodec = null;
 
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
     private final WeakReference<Activity> _messageViewReference;
@@ -49,27 +56,6 @@ public class CameraClass implements ICamera {
 
     }
 
-    //for record and preview
-    public void updatePreview() {
-        if (null == mCameraDevice) {
-            return;
-        }
-        try {
-            setUpCaptureRequestBuilder(_previewBuilder);
-            HandlerThread thread = new HandlerThread("CameraPreview");
-            thread.start();
-            mPreviewSession.setRepeatingRequest(_previewBuilder.build(), null, mBackgroundHandler);
-            _cameraCallback.getCameraDevice(mCameraDevice);
-        } catch (CameraAccessException e) {
-            _cameraCallback.errorPreview();
-            e.printStackTrace();
-        }
-
-    }
-
-    private void setUpCaptureRequestBuilder(CaptureRequest.Builder builder) {
-        builder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-    }
 
     @Override
     public void setSurfaceTextureSize(int width, int height) {
@@ -230,27 +216,79 @@ public class CameraClass implements ICamera {
     }
 
     @Override
-    public void createCaptureSession(Surface previewSurface, Surface recorderSurface) {
-        List<Surface> surfacesList = new ArrayList<>();
+    public void createCaptureSession(final Surface previewSurface, Surface recorderSurface) {
         try {
-            _previewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            surfacesList.add(previewSurface);
-            _previewBuilder.addTarget(previewSurface);
-            surfacesList.add(recorderSurface);
-            _previewBuilder.addTarget(recorderSurface);
-            mCameraDevice.createCaptureSession(surfacesList, new CameraCaptureSession.StateCallback() {
+            try {
+                mediaCodec = MediaCodec.createEncoderByType("video/avc");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            MediaFormat format = MediaFormat.createVideoFormat("video/avc", 1920, 1080);
+            int colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
+            int videoBitrate = 90000;
+            int videoFramePerSecond = 25;
+            int iframeInterval = 2;
+            format.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
+            format.setInteger(MediaFormat.KEY_BIT_RATE, videoBitrate);
+            format.setInteger(MediaFormat.KEY_FRAME_RATE, videoFramePerSecond);
+            format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, iframeInterval);
+
+            mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+
+            List<Surface> surfaces = new ArrayList<>();
+            final Surface mEncodeSurface = mediaCodec.createInputSurface();
+            surfaces.add(mEncodeSurface);
+            surfaces.add(previewSurface);
+
+            mCameraDevice.createCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
 
                 @Override
-                public void onConfigured(@NonNull CameraCaptureSession session) {
+                public void onConfigured(CameraCaptureSession session) {
                     mPreviewSession = session;
-                    updatePreview();
+                    try {
+                        CaptureRequest.Builder builder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+                        builder.addTarget(previewSurface);
+                        builder.addTarget(mEncodeSurface);
+                        mPreviewSession.setRepeatingRequest(builder.build(), null, mBackgroundHandler);
+
+                    } catch (CameraAccessException e) {
+                        e.printStackTrace();
+                    }
                 }
 
                 @Override
-                public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-
+                public void onConfigureFailed(CameraCaptureSession session) {
+                    // todo error
                 }
             }, mBackgroundHandler);
+
+            mediaCodec.setCallback(new MediaCodec.Callback() {
+                @Override
+                public void onInputBufferAvailable(MediaCodec codec, int index) {
+//                    Log.d("samson", "input");
+                }
+
+                @Override
+                public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info) {
+//                    Log.d("samson", "output" + String.valueOf(info.size));
+                    ByteBuffer buffer = codec.getOutputBuffer(index);
+//                    Log.d("samson", "size = " + String.valueOf(info.size));
+                    codec.releaseOutputBuffer(index, false);
+                }
+
+                @Override
+                public void onError(MediaCodec codec, MediaCodec.CodecException e) {
+
+                }
+
+                @Override
+                public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {
+
+                }
+            });
+            mediaCodec.start();
+
         } catch (CameraAccessException e) {
             _cameraCallback.errorPreview();
             e.printStackTrace();

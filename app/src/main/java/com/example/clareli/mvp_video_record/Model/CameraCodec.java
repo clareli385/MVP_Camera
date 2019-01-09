@@ -31,6 +31,54 @@ public class CameraCodec implements ICameraCodec {
     private MediaFormat _mediaFormat = null;
     private int videoTrackIndex = 0;
 
+    @Override
+    public Surface initCodec() {
+
+        try {
+            _mCodec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
+            Log.i(TAG, "_mCodec initialized");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        _mCodec.configure(createMediaFormat(), null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+        mEncoderSurface = _mCodec.createInputSurface();
+        if(_mCodec != null) {
+            _mCodec.setCallback(new EncoderCallback());
+            _mCodec.start();
+        }
+        return mEncoderSurface;
+    }
+
+    @Override
+    public MediaFormat createMediaFormat() {
+        _mediaFormat = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, textureViewWidth, textureViewHeight);
+        _mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 500000);//500kbps
+        _mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 15);
+        _mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface); //COLOR_FormatSurface
+        _mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 5);
+        return _mediaFormat;
+    }
+
+    @Override
+    public MediaCodec getEncoder() {
+        return _mCodec;
+    }
+
+    @Override
+    public void record(String dstPath) {
+        try {
+            mMuxer = new MediaMuxer(dstPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+
+            Log.i(TAG, "_mCodec setCallback");
+            isEncode = true;
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     //onSurfaceTextureDestroyed
     @Override
@@ -49,53 +97,8 @@ public class CameraCodec implements ICameraCodec {
         }
     }
 
-    @Override
-    public MediaCodec getEncoder() {
-        return _mCodec;
-    }
 
-    @Override
-    public MediaFormat createMediaFormat() {
-        _mediaFormat = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, textureViewWidth, textureViewHeight);
-        _mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 500000);//500kbps
-        _mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 15);
-        _mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface); //COLOR_FormatSurface
-        _mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 5);
-        return _mediaFormat;
-    }
 
-    @Override
-    public Surface initCodec() {
-
-        try {
-            _mCodec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
-            Log.i(TAG, "_mCodec initialized");
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        _mCodec.configure(createMediaFormat(), null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-        mEncoderSurface = _mCodec.createInputSurface();
-        return mEncoderSurface;
-    }
-
-    @Override
-    public void record(String dstPath) {
-        try {
-            mMuxer = new MediaMuxer(dstPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
-
-            Log.i(TAG, "_mCodec setCallback");
-            isEncode = true;
-            if(_mCodec != null) {
-                _mCodec.setCallback(new EncoderCallback());
-                _mCodec.start();
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     private class EncoderCallback extends MediaCodec.Callback {
         @Override

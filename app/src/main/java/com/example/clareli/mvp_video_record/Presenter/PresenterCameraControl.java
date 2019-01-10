@@ -16,6 +16,8 @@ import com.example.clareli.mvp_video_record.Model.CameraCodec;
 import com.example.clareli.mvp_video_record.Model.ICamera;
 import com.example.clareli.mvp_video_record.Model.CameraClass;
 import com.example.clareli.mvp_video_record.Model.ICameraCodec;
+import com.example.clareli.mvp_video_record.Model.IMuxerOutput;
+import com.example.clareli.mvp_video_record.Model.MuxerOutput;
 import com.example.clareli.mvp_video_record.View.AutoFitTextureView;
 import com.example.clareli.mvp_video_record.View.IViewErrorCallback;
 import com.example.clareli.mvp_video_record.View.ViewErrorCallback;
@@ -40,6 +42,7 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
     private CameraDevice _cameraDevice = null;
     private AutoFitTextureView _textureView = null;
     private ICameraCodec _cameraCodec = null;
+    private IMuxerOutput _muxerOutput = null;
 //    private CaptureRequest.Builder _cameraBuilder = null;
     private SurfaceTexture _previewSurTexture;
     private Surface _recordSurface = null;
@@ -64,6 +67,8 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
             assert _previewSurTexture != null;
             _previewSurTexture.setDefaultBufferSize(_textureView.getWidth(), _textureView.getHeight());
             _cameraCodec.initCodec();
+            _muxerOutput = new MuxerOutput(filePath, _cameraCodec.getMediaFormat());
+            _cameraCodec.setCodecCallback(_muxerOutput);
             _previewSurface = new Surface(_previewSurTexture);
             _iCamera.createCaptureSession(_previewSurface, _cameraCodec.getSurface(), filePath);
 

@@ -51,18 +51,29 @@ public class CameraCodec implements ICameraCodec {
         _mediaCodec.configure(_mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
         recordSurface = _mediaCodec.createInputSurface();
 
+       return _mediaCodec;
+    }
+
+    @Override
+    public MediaFormat getMediaFormat() {
+        return _mediaFormat;
+    }
+
+    @Override
+    public void setCodecCallback(final IMuxerOutput muxerOutput) {
         _mediaCodec.setCallback(new MediaCodec.Callback() {
             @Override
             public void onInputBufferAvailable(MediaCodec codec, int index) {
-                    Log.d("samson", "input");
+                Log.d("samson", "input");
 
             }
 
             @Override
             public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info) {
-                    Log.d("samson", "output" + String.valueOf(info.size));
+                Log.d("samson", "output" + String.valueOf(info.size));
                 ByteBuffer buffer = codec.getOutputBuffer(index);
-                    Log.d("samson", "size = " + String.valueOf(info.size));
+                Log.d("samson", "size = " + String.valueOf(info.size));
+                muxerOutput.writeSampleData(buffer, info);
                 codec.releaseOutputBuffer(index, false);
 
             }
@@ -78,17 +89,6 @@ public class CameraCodec implements ICameraCodec {
             }
         });
         _mediaCodec.start();
-
-       return _mediaCodec;
-    }
-
-    @Override
-    public MediaFormat getMediaFormat() {
-        return _mediaFormat;
-    }
-
-    @Override
-    public void setCodecCallback() {
 
     }
 

@@ -10,6 +10,6 @@ public interface ICameraCodec {
     void stopRecord();
     MediaCodec getEncoder();
     MediaFormat getMediaFormat();
-    void setCodecCallback();
+    void setCodecCallback(final IMuxerOutput muxerOutput);
     Surface getSurface();
 }

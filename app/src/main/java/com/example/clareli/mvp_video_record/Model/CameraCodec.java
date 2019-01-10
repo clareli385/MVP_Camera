@@ -15,50 +15,86 @@ import java.nio.ByteBuffer;
 
 public class CameraCodec implements ICameraCodec {
     private String TAG = "CameraCodec";
-//    private BufferedOutputStream outputStream;
     private MediaCodec _mCodec = null;
-    private Surface _encoderSurface;
-    private int _textureViewWidth = 1920;
-    private int _textureViewHeight = 1080;
+
     private boolean _isEncode = false;
-    private ByteBuffer _inputByteBuffer;
     private PresenterCameraCallback _cameraCallback = null;
+
+    private MediaMuxer _muxer;
+    private MediaFormat _mediaFormat = null;
+    private int _videoTrackIndex = 0;
+    private MediaCodec _mediaCodec = null;
+    private Surface recordSurface = null;
 
     public CameraCodec(PresenterCameraCallback cameraCallback) {
         _cameraCallback = cameraCallback;
     }
-    private MediaMuxer _muxer;
-    private MediaFormat _mediaFormat = null;
-    private int _videoTrackIndex = 0;
 
     @Override
-    public Surface initCodec() {
+    public MediaCodec initCodec() {
 
         try {
-            _mCodec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
-            Log.i(TAG, "_mCodec initialized");
-
+            _mediaCodec = MediaCodec.createEncoderByType("video/avc");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        _mCodec.configure(createMediaFormat(), null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-        _encoderSurface = _mCodec.createInputSurface();
-        if(_mCodec != null) {
-            _mCodec.setCallback(new EncoderCallback());
-            _mCodec.start();
-        }
-        return _encoderSurface;
+        _mediaFormat = MediaFormat.createVideoFormat("video/avc", 1920, 1080);
+        int colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
+        int videoBitrate = 90000;
+        int videoFramePerSecond = 25;
+        int iframeInterval = 2;
+        _mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
+        _mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, videoBitrate);
+        _mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, videoFramePerSecond);
+        _mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, iframeInterval);
+        _mediaCodec.configure(_mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+        recordSurface = _mediaCodec.createInputSurface();
+
+        _mediaCodec.setCallback(new MediaCodec.Callback() {
+            @Override
+            public void onInputBufferAvailable(MediaCodec codec, int index) {
+                    Log.d("samson", "input");
+
+            }
+
+            @Override
+            public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info) {
+                    Log.d("samson", "output" + String.valueOf(info.size));
+                ByteBuffer buffer = codec.getOutputBuffer(index);
+                    Log.d("samson", "size = " + String.valueOf(info.size));
+                codec.releaseOutputBuffer(index, false);
+
+            }
+
+            @Override
+            public void onError(MediaCodec codec, MediaCodec.CodecException e) {
+
+            }
+
+            @Override
+            public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {
+
+            }
+        });
+        _mediaCodec.start();
+
+       return _mediaCodec;
     }
 
     @Override
-    public MediaFormat createMediaFormat() {
-        _mediaFormat = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, _textureViewWidth, _textureViewHeight);
-        _mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 500000);//500kbps
-        _mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 15);
-        _mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface); //COLOR_FormatSurface
-        _mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 5);
+    public MediaFormat getMediaFormat() {
         return _mediaFormat;
+    }
+
+    @Override
+    public void setCodecCallback() {
+
+    }
+
+    @Override
+    public Surface getSurface() {
+        return recordSurface;
     }
 
     @Override
@@ -96,47 +132,5 @@ public class CameraCodec implements ICameraCodec {
             _mCodec = null;
         }
     }
-
-
-
-
-    private class EncoderCallback extends MediaCodec.Callback {
-        @Override
-        public void onInputBufferAvailable(MediaCodec codec, int index) {
-            _inputByteBuffer = _mCodec.getInputBuffer(index);
-            Log.i("CLE", "onInputBufferAvailable");
-        }
-
-        @Override
-        public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info) {
-            ByteBuffer encodedData = _mCodec.getOutputBuffer(index);
-            _videoTrackIndex = _muxer.addTrack(_mediaFormat);
-
-            if(info != null) {
-                encodedData.position(info.offset);
-                encodedData.limit(info.offset + info.size);
-                _muxer.start();
-                //save output buffer by _muxer
-                Log.i("CLE", "onOutputBufferAvailable");
-
-                if(_isEncode == true)
-                    _muxer.writeSampleData(_videoTrackIndex, encodedData, info);
-            }
-
-            _mCodec.releaseOutputBuffer(index, false);
-        }
-
-        @Override
-        public void onError(MediaCodec codec, MediaCodec.CodecException e) {
-            Log.d(TAG, "Error: " + e);
-        }
-
-        @Override
-        public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {
-            Log.d(TAG, "encoder output format changed: " + format);
-        }
-    }
-
-
 
 }

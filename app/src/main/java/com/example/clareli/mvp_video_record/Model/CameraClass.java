@@ -16,6 +16,7 @@ import android.media.MediaFormat;
 import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.util.Log;
 import android.view.Surface;
 import android.support.annotation.NonNull;
 
@@ -38,8 +39,6 @@ public class CameraClass implements ICamera {
 
     private HandlerThread _backgroundThread = null;
     private Handler _backgroundHandler = null;
-    MediaCodec _mediaCodec = null;
-
     private Semaphore _cameraOpenCloseLock = new Semaphore(1);
     private final WeakReference<Activity> _messageViewReference;
 
@@ -47,7 +46,6 @@ public class CameraClass implements ICamera {
     private int _textureViewHeight = 1080;
     private PresenterCameraCallback _cameraCallback = null;
     private SurfaceTexture _previewSurfaceTexture;
-
 
     public CameraClass(Activity activity, PresenterCameraCallback cameraCallback) {
         _messageViewReference = new WeakReference<>(activity);
@@ -215,29 +213,11 @@ public class CameraClass implements ICamera {
     }
 
     @Override
-    public void createCaptureSession(final Surface previewSurface, Surface recorderSurface) {
+    public void createCaptureSession(final Surface previewSurface, final Surface recordSurface, String filePath) {
         try {
-            try {
-                _mediaCodec = MediaCodec.createEncoderByType("video/avc");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            MediaFormat format = MediaFormat.createVideoFormat("video/avc", 1920, 1080);
-            int colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
-            int videoBitrate = 90000;
-            int videoFramePerSecond = 25;
-            int iframeInterval = 2;
-            format.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
-            format.setInteger(MediaFormat.KEY_BIT_RATE, videoBitrate);
-            format.setInteger(MediaFormat.KEY_FRAME_RATE, videoFramePerSecond);
-            format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, iframeInterval);
-
-            _mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 
             List<Surface> surfaces = new ArrayList<>();
-            final Surface mEncodeSurface = _mediaCodec.createInputSurface();
-            surfaces.add(mEncodeSurface);
+            surfaces.add(recordSurface);
             surfaces.add(previewSurface);
 
             _cameraDevice.createCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
@@ -248,7 +228,7 @@ public class CameraClass implements ICamera {
                     try {
                         CaptureRequest.Builder builder = _cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
                         builder.addTarget(previewSurface);
-                        builder.addTarget(mEncodeSurface);
+                        builder.addTarget(recordSurface);
                         _previewSession.setRepeatingRequest(builder.build(), null, _backgroundHandler);
 
                     } catch (CameraAccessException e) {
@@ -261,32 +241,6 @@ public class CameraClass implements ICamera {
                     // todo error
                 }
             }, _backgroundHandler);
-
-            _mediaCodec.setCallback(new MediaCodec.Callback() {
-                @Override
-                public void onInputBufferAvailable(MediaCodec codec, int index) {
-//                    Log.d("samson", "input");
-                }
-
-                @Override
-                public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info) {
-//                    Log.d("samson", "output" + String.valueOf(info.size));
-                    ByteBuffer buffer = codec.getOutputBuffer(index);
-//                    Log.d("samson", "size = " + String.valueOf(info.size));
-                    codec.releaseOutputBuffer(index, false);
-                }
-
-                @Override
-                public void onError(MediaCodec codec, MediaCodec.CodecException e) {
-
-                }
-
-                @Override
-                public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {
-
-                }
-            });
-            _mediaCodec.start();
 
         } catch (CameraAccessException e) {
             _cameraCallback.errorPreview();

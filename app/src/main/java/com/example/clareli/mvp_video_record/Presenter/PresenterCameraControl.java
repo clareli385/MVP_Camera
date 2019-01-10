@@ -7,6 +7,7 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 
+import android.media.MediaCodec;
 import android.view.Surface;
 import android.view.TextureView;
 
@@ -62,10 +63,9 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
             _previewSurTexture = _textureView.getSurfaceTexture();
             assert _previewSurTexture != null;
             _previewSurTexture.setDefaultBufferSize(_textureView.getWidth(), _textureView.getHeight());
-            _recordSurface = _cameraCodec.initCodec();
+            _cameraCodec.initCodec();
             _previewSurface = new Surface(_previewSurTexture);
-            _iCamera.createCaptureSession(_previewSurface, _recordSurface);
-
+            _iCamera.createCaptureSession(_previewSurface, _cameraCodec.getSurface(), filePath);
 
         }
     }

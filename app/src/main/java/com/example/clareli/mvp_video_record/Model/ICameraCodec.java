@@ -5,9 +5,11 @@ import android.media.MediaFormat;
 import android.view.Surface;
 
 public interface ICameraCodec {
-    Surface initCodec();
+    MediaCodec initCodec();
     void record(String dstPath);
     void stopRecord();
     MediaCodec getEncoder();
-    MediaFormat createMediaFormat();
+    MediaFormat getMediaFormat();
+    void setCodecCallback();
+    Surface getSurface();
 }

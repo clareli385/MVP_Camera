@@ -4,7 +4,7 @@ import android.hardware.camera2.CameraDevice;
 
 import java.nio.ByteBuffer;
 
-public interface IInterfaceCameraCallback {
+public interface IPresenterCameraCallback {
     void errorCameraCallback();
     void errorCameraRecordCallback();
     void completedCameraCallback();
@@ -14,5 +14,4 @@ public interface IInterfaceCameraCallback {
     void errorDecoderCallback();
     void completedDecoderCallback();
     void getCameraDevice(CameraDevice mCameraDevice);
-//    void startToGetOutputDataForCodec();
 }

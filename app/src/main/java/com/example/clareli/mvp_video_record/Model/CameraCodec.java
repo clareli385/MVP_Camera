@@ -17,19 +17,19 @@ public class CameraCodec implements ICameraCodec {
     private String TAG = "CameraCodec";
 //    private BufferedOutputStream outputStream;
     private MediaCodec _mCodec = null;
-    private Surface mEncoderSurface;
-    private int textureViewWidth = 1920;
-    private int textureViewHeight = 1080;
-    private boolean isEncode = false;
-    private ByteBuffer inputByteBuffer;
+    private Surface _encoderSurface;
+    private int _textureViewWidth = 1920;
+    private int _textureViewHeight = 1080;
+    private boolean _isEncode = false;
+    private ByteBuffer _inputByteBuffer;
     private PresenterCameraCallback _cameraCallback = null;
 
     public CameraCodec(PresenterCameraCallback cameraCallback) {
         _cameraCallback = cameraCallback;
     }
-    private MediaMuxer mMuxer;
+    private MediaMuxer _muxer;
     private MediaFormat _mediaFormat = null;
-    private int videoTrackIndex = 0;
+    private int _videoTrackIndex = 0;
 
     @Override
     public Surface initCodec() {
@@ -43,17 +43,17 @@ public class CameraCodec implements ICameraCodec {
         }
 
         _mCodec.configure(createMediaFormat(), null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-        mEncoderSurface = _mCodec.createInputSurface();
+        _encoderSurface = _mCodec.createInputSurface();
         if(_mCodec != null) {
             _mCodec.setCallback(new EncoderCallback());
             _mCodec.start();
         }
-        return mEncoderSurface;
+        return _encoderSurface;
     }
 
     @Override
     public MediaFormat createMediaFormat() {
-        _mediaFormat = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, textureViewWidth, textureViewHeight);
+        _mediaFormat = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, _textureViewWidth, _textureViewHeight);
         _mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 500000);//500kbps
         _mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 15);
         _mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface); //COLOR_FormatSurface
@@ -69,10 +69,10 @@ public class CameraCodec implements ICameraCodec {
     @Override
     public void record(String dstPath) {
         try {
-            mMuxer = new MediaMuxer(dstPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+            _muxer = new MediaMuxer(dstPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
 
             Log.i(TAG, "_mCodec setCallback");
-            isEncode = true;
+            _isEncode = true;
 
 
         } catch (IOException e) {
@@ -84,8 +84,8 @@ public class CameraCodec implements ICameraCodec {
     @Override
     public void stopRecord() {
         try {
-            if (isEncode) {
-                isEncode = false;
+            if (_isEncode) {
+                _isEncode = false;
             } else {
                 _mCodec.stop();
                 _mCodec.release();
@@ -103,24 +103,24 @@ public class CameraCodec implements ICameraCodec {
     private class EncoderCallback extends MediaCodec.Callback {
         @Override
         public void onInputBufferAvailable(MediaCodec codec, int index) {
-            inputByteBuffer = _mCodec.getInputBuffer(index);
+            _inputByteBuffer = _mCodec.getInputBuffer(index);
             Log.i("CLE", "onInputBufferAvailable");
         }
 
         @Override
         public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info) {
             ByteBuffer encodedData = _mCodec.getOutputBuffer(index);
-            videoTrackIndex = mMuxer.addTrack(_mediaFormat);
+            _videoTrackIndex = _muxer.addTrack(_mediaFormat);
 
             if(info != null) {
                 encodedData.position(info.offset);
                 encodedData.limit(info.offset + info.size);
-                mMuxer.start();
-                //save output buffer by mMuxer
+                _muxer.start();
+                //save output buffer by _muxer
                 Log.i("CLE", "onOutputBufferAvailable");
 
-                if(isEncode == true)
-                    mMuxer.writeSampleData(videoTrackIndex, encodedData, info);
+                if(_isEncode == true)
+                    _muxer.writeSampleData(_videoTrackIndex, encodedData, info);
             }
 
             _mCodec.releaseOutputBuffer(index, false);

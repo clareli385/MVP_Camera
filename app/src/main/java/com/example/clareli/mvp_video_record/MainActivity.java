@@ -25,16 +25,16 @@ import static com.example.clareli.mvp_video_record.Util.IConstant.REQUEST_PERMIS
 import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_PERMISSIONS;
 
 public class MainActivity extends AppCompatActivity implements IViewErrorCallback {
-    private AutoFitTextureView mTextureView;
-    private Button recordStartBtn;
-    private IPresenterCameraControl iPresenterCameraControl = null;
+    private AutoFitTextureView _textureView;
+    private Button _recordStartBtn;
+    private IPresenterCameraControl _iPresenterCameraControl = null;
     //    private static String _fileName = "my_video_record.mp4";
     private static String _fileName = "mvp_mediacodec.264";//"new_video_record.3gp";//"video_record.3gp";
 
     private String _filePath = null;
     private File _fileRecord = null;
-    private boolean mIsRecordingVideo = false;
-    private ViewErrorCallback viewErrorCallback;
+    private boolean _isRecordingVideo = false;
+    private ViewErrorCallback _viewErrorCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,23 +51,23 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     @Override
     protected void onResume() {
         super.onResume();
-        iPresenterCameraControl.startBackground();
-        iPresenterCameraControl.videoPreviewStart(mTextureView, this);
+        _iPresenterCameraControl.startBackground();
+        _iPresenterCameraControl.videoPreviewStart(_textureView, this);
 
     }
 
     @Override
     protected void onPause() {
-        if (iPresenterCameraControl != null)
-            iPresenterCameraControl.closeCamera();
+        if (_iPresenterCameraControl != null)
+            _iPresenterCameraControl.closeCamera();
         super.onPause();
 
     }
 
     public void findViews() {
-        mTextureView = findViewById(R.id.texture);
-        recordStartBtn = findViewById(R.id.take_photo);
-        recordStartBtn.setOnClickListener(recordClickListener);
+        _textureView = findViewById(R.id.texture);
+        _recordStartBtn = findViewById(R.id.take_photo);
+        _recordStartBtn.setOnClickListener(recordClickListener);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
             //save to internal storage D
             _filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath();
@@ -76,8 +76,8 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     }
 
     public void initPresenter() {
-        viewErrorCallback = new ViewErrorCallback(this);
-        iPresenterCameraControl = new PresenterCameraControl(this, viewErrorCallback);
+        _viewErrorCallback = new ViewErrorCallback(this);
+        _iPresenterCameraControl = new PresenterCameraControl(this, _viewErrorCallback);
 
     }
 
@@ -86,15 +86,15 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
         public void onClick(View v) {
             switch (v.getId()) {
                 case R.id.take_photo:
-                    if (mIsRecordingVideo == false) {
-                        mIsRecordingVideo = true;
-                        recordStartBtn.setText("Stop");
-                        iPresenterCameraControl.videoRecordStart(_fileRecord.getAbsolutePath());
+                    if (_isRecordingVideo == false) {
+                        _isRecordingVideo = true;
+                        _recordStartBtn.setText("Stop");
+                        _iPresenterCameraControl.videoRecordStart(_fileRecord.getAbsolutePath());
 
                     } else {
-                        mIsRecordingVideo = false;
-                        recordStartBtn.setText("Record");
-                        iPresenterCameraControl.videoRecordStop();
+                        _isRecordingVideo = false;
+                        _recordStartBtn.setText("Record");
+                        _iPresenterCameraControl.videoRecordStop();
                     }
                     break;
             }

@@ -16,7 +16,6 @@ import android.media.MediaFormat;
 import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.util.Log;
 import android.view.Surface;
 import android.support.annotation.NonNull;
 
@@ -32,20 +31,20 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 public class CameraClass implements ICamera {
-    private CameraDevice mCameraDevice = null;
-    private CameraCaptureSession mPreviewSession = null;
-    private MediaRecorder mMediaRecorder = null;
+    private CameraDevice _cameraDevice = null;
+    private CameraCaptureSession _previewSession = null;
+    private MediaRecorder _mediaRecorder = null;
     private CaptureRequest.Builder _previewBuilder = null;
 
-    private HandlerThread mBackgroundThread = null;
-    private Handler mBackgroundHandler = null;
-    MediaCodec mediaCodec = null;
+    private HandlerThread _backgroundThread = null;
+    private Handler _backgroundHandler = null;
+    MediaCodec _mediaCodec = null;
 
-    private Semaphore mCameraOpenCloseLock = new Semaphore(1);
+    private Semaphore _cameraOpenCloseLock = new Semaphore(1);
     private final WeakReference<Activity> _messageViewReference;
 
-    private int textureViewWidth = 1920;
-    private int textureViewHeight = 1080;
+    private int _textureViewWidth = 1920;
+    private int _textureViewHeight = 1080;
     private PresenterCameraCallback _cameraCallback = null;
     private SurfaceTexture _previewSurfaceTexture;
 
@@ -59,35 +58,35 @@ public class CameraClass implements ICamera {
 
     @Override
     public void setSurfaceTextureSize(int width, int height) {
-        textureViewWidth = width;
-        textureViewHeight = height;
+        _textureViewWidth = width;
+        _textureViewHeight = height;
     }
 
 
     @Override
     public void startPreview(Surface previewSurface) {
-        if (null == mCameraDevice) {
+        if (null == _cameraDevice) {
             return;
         }
 
         try {
             closePreviewSession();
             assert _previewSurfaceTexture != null;
-            _previewSurfaceTexture.setDefaultBufferSize(textureViewWidth, textureViewHeight);
-            _previewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            _previewSurfaceTexture.setDefaultBufferSize(_textureViewWidth, _textureViewHeight);
+            _previewBuilder = _cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             _previewBuilder.addTarget(previewSurface);
 
-            mCameraDevice.createCaptureSession(Collections.singletonList(previewSurface), new CameraCaptureSession.StateCallback() {
+            _cameraDevice.createCaptureSession(Collections.singletonList(previewSurface), new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {
-                    mPreviewSession = session;
+                    _previewSession = session;
                     try {
                         // Auto focus should be continuous for camera preview.
                         _previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
 
                         // Finally, we start displaying the camera preview.
-                        mPreviewSession.setRepeatingRequest(_previewBuilder.build(),
-                                null, mBackgroundHandler);
+                        _previewSession.setRepeatingRequest(_previewBuilder.build(),
+                                null, _backgroundHandler);
                     } catch (CameraAccessException e) {
                         _cameraCallback.errorPreview();
                         e.printStackTrace();
@@ -97,7 +96,7 @@ public class CameraClass implements ICamera {
                 @Override
                 public void onConfigureFailed(@NonNull CameraCaptureSession session) {
                 }
-            }, mBackgroundHandler);
+            }, _backgroundHandler);
 
         } catch (CameraAccessException e) {
             _cameraCallback.errorPreview();
@@ -127,28 +126,28 @@ public class CameraClass implements ICamera {
 
     @Override
     public void closeCamera() {
-        if (mCameraDevice == null)
+        if (_cameraDevice == null)
             return;
 
         try {
-            mCameraOpenCloseLock.acquire();
-            if (mPreviewSession != null) {
-                mPreviewSession.close();
-                mPreviewSession = null;
+            _cameraOpenCloseLock.acquire();
+            if (_previewSession != null) {
+                _previewSession.close();
+                _previewSession = null;
             }
-            if (null != mCameraDevice) {
-                mCameraDevice.close();
-                mCameraDevice = null;
+            if (null != _cameraDevice) {
+                _cameraDevice.close();
+                _cameraDevice = null;
             }
-            if (null != mMediaRecorder) {
-                mMediaRecorder.release();
-                mMediaRecorder = null;
+            if (null != _mediaRecorder) {
+                _mediaRecorder.release();
+                _mediaRecorder = null;
             }
         } catch (InterruptedException e) {
             _cameraCallback.errorPreview();
             throw new RuntimeException("Interrupted while trying to lock camera closing.");
         } finally {
-            mCameraOpenCloseLock.release();
+            _cameraOpenCloseLock.release();
         }
 
     }
@@ -158,26 +157,26 @@ public class CameraClass implements ICamera {
 
         @Override
         public void onOpened(@NonNull CameraDevice camera) {
-            mCameraDevice = camera;
-            _cameraCallback.getCameraDevice(mCameraDevice);
+            _cameraDevice = camera;
+            _cameraCallback.getCameraDevice(_cameraDevice);
             Surface previewSurface = new Surface(_previewSurfaceTexture);
             startPreview(previewSurface);
-            mCameraOpenCloseLock.release();
+            _cameraOpenCloseLock.release();
 
         }
 
         @Override
         public void onDisconnected(@NonNull CameraDevice camera) {
-            mCameraOpenCloseLock.release();
+            _cameraOpenCloseLock.release();
             camera.close();
-            mCameraDevice = null;
+            _cameraDevice = null;
         }
 
         @Override
         public void onError(@NonNull CameraDevice camera, int error) {
-            mCameraOpenCloseLock.release();
+            _cameraOpenCloseLock.release();
             camera.close();
-            mCameraDevice = null;
+            _cameraDevice = null;
 
             Activity activity = _messageViewReference.get();
             if (null != activity) {
@@ -188,19 +187,19 @@ public class CameraClass implements ICamera {
 
     @Override
     public void startBackgroundThread() {
-        mBackgroundThread = new HandlerThread("CameraBackground");
-        mBackgroundThread.start();
-        mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
+        _backgroundThread = new HandlerThread("CameraBackground");
+        _backgroundThread.start();
+        _backgroundHandler = new Handler(_backgroundThread.getLooper());
     }
 
     @Override
     public void stopBackgroundThread() {
-        if (mBackgroundThread != null) {
-            mBackgroundThread.quitSafely();
+        if (_backgroundThread != null) {
+            _backgroundThread.quitSafely();
             try {
-                mBackgroundThread.join();
-                mBackgroundThread = null;
-                mBackgroundHandler = null;
+                _backgroundThread.join();
+                _backgroundThread = null;
+                _backgroundHandler = null;
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -209,9 +208,9 @@ public class CameraClass implements ICamera {
 
     @Override
     public void closePreviewSession() {
-        if (mPreviewSession != null) {
-            mPreviewSession.close();
-            mPreviewSession = null;
+        if (_previewSession != null) {
+            _previewSession.close();
+            _previewSession = null;
         }
     }
 
@@ -219,7 +218,7 @@ public class CameraClass implements ICamera {
     public void createCaptureSession(final Surface previewSurface, Surface recorderSurface) {
         try {
             try {
-                mediaCodec = MediaCodec.createEncoderByType("video/avc");
+                _mediaCodec = MediaCodec.createEncoderByType("video/avc");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -234,23 +233,23 @@ public class CameraClass implements ICamera {
             format.setInteger(MediaFormat.KEY_FRAME_RATE, videoFramePerSecond);
             format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, iframeInterval);
 
-            mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+            _mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 
             List<Surface> surfaces = new ArrayList<>();
-            final Surface mEncodeSurface = mediaCodec.createInputSurface();
+            final Surface mEncodeSurface = _mediaCodec.createInputSurface();
             surfaces.add(mEncodeSurface);
             surfaces.add(previewSurface);
 
-            mCameraDevice.createCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
+            _cameraDevice.createCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
 
                 @Override
                 public void onConfigured(CameraCaptureSession session) {
-                    mPreviewSession = session;
+                    _previewSession = session;
                     try {
-                        CaptureRequest.Builder builder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+                        CaptureRequest.Builder builder = _cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
                         builder.addTarget(previewSurface);
                         builder.addTarget(mEncodeSurface);
-                        mPreviewSession.setRepeatingRequest(builder.build(), null, mBackgroundHandler);
+                        _previewSession.setRepeatingRequest(builder.build(), null, _backgroundHandler);
 
                     } catch (CameraAccessException e) {
                         e.printStackTrace();
@@ -261,9 +260,9 @@ public class CameraClass implements ICamera {
                 public void onConfigureFailed(CameraCaptureSession session) {
                     // todo error
                 }
-            }, mBackgroundHandler);
+            }, _backgroundHandler);
 
-            mediaCodec.setCallback(new MediaCodec.Callback() {
+            _mediaCodec.setCallback(new MediaCodec.Callback() {
                 @Override
                 public void onInputBufferAvailable(MediaCodec codec, int index) {
 //                    Log.d("samson", "input");
@@ -287,7 +286,7 @@ public class CameraClass implements ICamera {
 
                 }
             });
-            mediaCodec.start();
+            _mediaCodec.start();
 
         } catch (CameraAccessException e) {
             _cameraCallback.errorPreview();
@@ -298,7 +297,7 @@ public class CameraClass implements ICamera {
     @Override
     public boolean tryToGetAcquire() {
         try {
-            if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
+            if (!_cameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 return true;
             }
         } catch (InterruptedException e) {

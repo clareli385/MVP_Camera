@@ -29,20 +29,20 @@ import static com.example.clareli.mvp_video_record.Util.IConstant.REQUEST_PERMIS
 import static com.example.clareli.mvp_video_record.Util.PermissionCheck.hasPermissionsGranted;
 import static com.example.clareli.mvp_video_record.Util.PermissionCheck.requestPermission;
 
-public class PresenterCameraControl implements IPresenterCameraControl, IInterfaceCameraCallback {
+public class PresenterCameraControl implements IPresenterCameraControl, IPresenterCameraCallback {
     private final WeakReference<Activity> _messageViewReference;
     private ICamera _iCamera = null;
     private PresenterCameraCallback _cameraCallback = null;
     private Object _systemService = null;
-    private String[] cameraPermission = {WRITE_EXTERNAL_STORAGE, CAMERA, RECORD_AUDIO};
+    private String[] _cameraPermission = {WRITE_EXTERNAL_STORAGE, CAMERA, RECORD_AUDIO};
     private ViewErrorCallback _viewErrorCallback = null;
     private CameraDevice _cameraDevice = null;
     private AutoFitTextureView _textureView = null;
     private ICameraCodec _cameraCodec = null;
 //    private CaptureRequest.Builder _cameraBuilder = null;
-    private SurfaceTexture previewSurTexture;
-    private Surface recordSurface = null;
-    private Surface previewSurface = null;
+    private SurfaceTexture _previewSurTexture;
+    private Surface _recordSurface = null;
+    private Surface _previewSurface = null;
 
 
     public PresenterCameraControl(Activity activity, ViewErrorCallback viewErrorCallback) {
@@ -57,15 +57,14 @@ public class PresenterCameraControl implements IPresenterCameraControl, IInterfa
 
     @Override
     public void videoRecordStart(String filePath) {
-//        List<Surface> surfacesList = new ArrayList<>();
         if (_cameraDevice != null) {
             _iCamera.closePreviewSession();
-            previewSurTexture = _textureView.getSurfaceTexture();
-            assert previewSurTexture != null;
-            previewSurTexture.setDefaultBufferSize(_textureView.getWidth(), _textureView.getHeight());
-            recordSurface = _cameraCodec.initCodec();
-            previewSurface = new Surface(previewSurTexture);
-            _iCamera.createCaptureSession(previewSurface, recordSurface);
+            _previewSurTexture = _textureView.getSurfaceTexture();
+            assert _previewSurTexture != null;
+            _previewSurTexture.setDefaultBufferSize(_textureView.getWidth(), _textureView.getHeight());
+            _recordSurface = _cameraCodec.initCodec();
+            _previewSurface = new Surface(_previewSurTexture);
+            _iCamera.createCaptureSession(_previewSurface, _recordSurface);
 
 
         }
@@ -74,7 +73,7 @@ public class PresenterCameraControl implements IPresenterCameraControl, IInterfa
     @Override
     public void videoRecordStop() {
         _cameraCodec.stopRecord();
-        _iCamera.startPreview(previewSurface);
+        _iCamera.startPreview(_previewSurface);
     }
 
 
@@ -82,7 +81,7 @@ public class PresenterCameraControl implements IPresenterCameraControl, IInterfa
     public void videoPreviewStart(AutoFitTextureView textureView, IViewErrorCallback iViewErrorCallback) {
         _textureView = textureView;
         if (textureView.isAvailable()) {
-            if (hasPermissionsGranted(_messageViewReference.get(), cameraPermission)) {
+            if (hasPermissionsGranted(_messageViewReference.get(), _cameraPermission)) {
                 String cameraId = selectCamera();
                 CameraManager manager = (CameraManager) _systemService;
                 _iCamera.openCamera(textureView.getWidth(), textureView.getHeight(), cameraId, manager, textureView.getSurfaceTexture());
@@ -127,12 +126,12 @@ public class PresenterCameraControl implements IPresenterCameraControl, IInterfa
 
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-            if (hasPermissionsGranted(_messageViewReference.get(), cameraPermission)) {
+            if (hasPermissionsGranted(_messageViewReference.get(), _cameraPermission)) {
                 String cameraId = selectCamera();
                 CameraManager manager = (CameraManager) _systemService;
                 _iCamera.openCamera(width, height, cameraId, manager, surface);
             } else {
-                requestPermission((MainActivity) (_messageViewReference.get()), cameraPermission, REQUEST_PERMISSION_CODE);
+                requestPermission((MainActivity) (_messageViewReference.get()), _cameraPermission, REQUEST_PERMISSION_CODE);
                 return;
             }
         }
@@ -144,7 +143,6 @@ public class PresenterCameraControl implements IPresenterCameraControl, IInterfa
         @Override
         public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
             _cameraCodec.stopRecord();
-//            return false;
             return true;
         }
 

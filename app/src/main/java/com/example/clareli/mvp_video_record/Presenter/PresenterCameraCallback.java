@@ -2,11 +2,9 @@ package com.example.clareli.mvp_video_record.Presenter;
 
 import android.hardware.camera2.CameraDevice;
 
-import java.nio.ByteBuffer;
-
 public class PresenterCameraCallback {
-    private IInterfaceCameraCallback _cameraCallback;
-    public PresenterCameraCallback(IInterfaceCameraCallback callback){
+    private IPresenterCameraCallback _cameraCallback;
+    public PresenterCameraCallback(IPresenterCameraCallback callback){
         _cameraCallback = callback;
     }
     public void completedPreview(){
@@ -37,7 +35,4 @@ public class PresenterCameraCallback {
         _cameraCallback.getCameraDevice(cameraDevice);
     }
 
-//    public void getOutputDataForCodec(){
-//        _cameraCallback.startToGetOutputDataForCodec();
-//    }
 }

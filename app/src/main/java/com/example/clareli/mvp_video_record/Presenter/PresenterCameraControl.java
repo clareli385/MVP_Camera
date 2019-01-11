@@ -8,6 +8,8 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 
 import android.media.MediaCodec;
+import android.media.MediaFormat;
+import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
 
@@ -23,6 +25,7 @@ import com.example.clareli.mvp_video_record.View.IViewErrorCallback;
 import com.example.clareli.mvp_video_record.View.ViewErrorCallback;
 
 import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
 
 
 import static android.Manifest.permission.CAMERA;
@@ -34,19 +37,20 @@ import static com.example.clareli.mvp_video_record.Util.PermissionCheck.requestP
 
 public class PresenterCameraControl implements IPresenterCameraControl, IPresenterCameraCallback {
     private final WeakReference<Activity> _messageViewReference;
-    private ICamera _iCamera = null;
-    private PresenterCameraCallback _cameraCallback = null;
-    private Object _systemService = null;
+    private String TAG = "PresenterCameraControl";
+    private ICamera _iCamera;
+    private PresenterCameraCallback _cameraCallback;
+    private Object _systemService;
     private String[] _cameraPermission = {WRITE_EXTERNAL_STORAGE, CAMERA, RECORD_AUDIO};
-    private ViewErrorCallback _viewErrorCallback = null;
-    private CameraDevice _cameraDevice = null;
-    private AutoFitTextureView _textureView = null;
-    private ICameraCodec _cameraCodec = null;
-    private IMuxerOutput _muxerOutput = null;
-//    private CaptureRequest.Builder _cameraBuilder = null;
+    private ViewErrorCallback _viewErrorCallback;
+    private CameraDevice _cameraDevice;
+    private AutoFitTextureView _textureView;
+    private ICameraCodec _cameraCodec;
+    private IMuxerOutput _muxerOutput;
     private SurfaceTexture _previewSurTexture;
-    private Surface _recordSurface = null;
-    private Surface _previewSurface = null;
+    private Surface _previewSurface;
+    private String _dstFilePath;
+
 
 
     public PresenterCameraControl(Activity activity, ViewErrorCallback viewErrorCallback) {
@@ -59,6 +63,7 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
 
     }
 
+
     @Override
     public void videoRecordStart(String filePath) {
         if (_cameraDevice != null) {
@@ -66,9 +71,9 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
             _previewSurTexture = _textureView.getSurfaceTexture();
             assert _previewSurTexture != null;
             _previewSurTexture.setDefaultBufferSize(_textureView.getWidth(), _textureView.getHeight());
+            _dstFilePath = filePath;
             _cameraCodec.initCodec();
-            _muxerOutput = new MuxerOutput(filePath, _cameraCodec.getMediaFormat());
-            _cameraCodec.setCodecCallback(_muxerOutput);
+            _cameraCodec.setCodecCallback();
             _previewSurface = new Surface(_previewSurTexture);
             _iCamera.createCaptureSession(_previewSurface, _cameraCodec.getSurface(), filePath);
 
@@ -78,6 +83,7 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
     @Override
     public void videoRecordStop() {
         _cameraCodec.stopRecord();
+        _muxerOutput.stopMuxer();
         _iCamera.startPreview(_previewSurface);
     }
 
@@ -107,7 +113,7 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
 
         CameraManager manager = (CameraManager) _systemService;
         try {
-            if(_iCamera.tryToGetAcquire()) {
+            if (_iCamera.tryToGetAcquire()) {
                 cameraId = manager.getCameraIdList()[0];
             }
         } catch (CameraAccessException e) {
@@ -120,11 +126,6 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
     public void closeCamera() {
         _iCamera.closeCamera();
         _iCamera.stopBackgroundThread();
-    }
-
-    @Override
-    public void cameraOpenError() {
-        _messageViewReference.get().finish();
     }
 
     private TextureView.SurfaceTextureListener mSurfaceTextureListener = new TextureView.SurfaceTextureListener() {
@@ -208,6 +209,27 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
     @Override
     public void getCameraDevice(CameraDevice mCameraDevice) {
         _cameraDevice = mCameraDevice;
+    }
+
+
+    /*from CameraCodec.java
+    prepare for muxer to write data to file
+     */
+    @Override
+    public void onOutputFormatChanged(MediaFormat format) {
+        _muxerOutput = new MuxerOutput(_dstFilePath, format);
+        ByteBuffer buffer0 = format.getByteBuffer("csd-0");    // SPS
+        ByteBuffer buffer1 = format.getByteBuffer("csd-1");    // PPS
+        Log.i(TAG, "buffer0 size:" + buffer0.getLong() + " ,buffer1:" + buffer1.getLong());
+    }
+
+    /*from CameraCodec.java
+    prepare for muxer to write data to file
+     */
+    @Override
+    public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info, ByteBuffer encodedData) {
+        Log.i(TAG,"info_presentationTimeUs:"+info.presentationTimeUs+", offset:"+info.offset);
+        _muxerOutput.writeSampleData(encodedData, info);
     }
 
 }

@@ -32,32 +32,26 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 public class CameraClass implements ICamera {
-    private CameraDevice _cameraDevice = null;
-    private CameraCaptureSession _previewSession = null;
-    private MediaRecorder _mediaRecorder = null;
-    private CaptureRequest.Builder _previewBuilder = null;
+    private CameraDevice _cameraDevice;
+    private CameraCaptureSession _previewSession;
+    private MediaRecorder _mediaRecorder;
+    private CaptureRequest.Builder _previewBuilder;
 
-    private HandlerThread _backgroundThread = null;
-    private Handler _backgroundHandler = null;
+    private HandlerThread _backgroundThread;
+    private Handler _backgroundHandler;
     private Semaphore _cameraOpenCloseLock = new Semaphore(1);
     private final WeakReference<Activity> _messageViewReference;
 
     private int _textureViewWidth = 1920;
     private int _textureViewHeight = 1080;
-    private PresenterCameraCallback _cameraCallback = null;
+    private PresenterCameraCallback _cameraCallback;
     private SurfaceTexture _previewSurfaceTexture;
+
 
     public CameraClass(Activity activity, PresenterCameraCallback cameraCallback) {
         _messageViewReference = new WeakReference<>(activity);
         _cameraCallback = cameraCallback;
 
-    }
-
-
-    @Override
-    public void setSurfaceTextureSize(int width, int height) {
-        _textureViewWidth = width;
-        _textureViewHeight = height;
     }
 
 
@@ -238,7 +232,7 @@ public class CameraClass implements ICamera {
 
                 @Override
                 public void onConfigureFailed(CameraCaptureSession session) {
-                    // todo error
+                    _cameraCallback.errorPreview();
                 }
             }, _backgroundHandler);
 

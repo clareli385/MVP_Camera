@@ -9,6 +9,5 @@ public interface IPresenterCameraControl {
     void videoRecordStop();
     void videoPreviewStart(AutoFitTextureView textureView, IViewErrorCallback iViewErrorCallback);
     void closeCamera();
-    void cameraOpenError();
     void startBackground();
 }

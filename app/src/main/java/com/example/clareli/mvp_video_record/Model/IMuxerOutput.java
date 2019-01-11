@@ -9,7 +9,4 @@ import java.nio.ByteBuffer;
 public interface IMuxerOutput {
     void writeSampleData(ByteBuffer encodedData, MediaCodec.BufferInfo info);
     void stopMuxer();
-    MediaMuxer getMuxer();
-    void resetMuxerInfo(MediaFormat mediaFormat);
-    int getTrackIndex();
 }

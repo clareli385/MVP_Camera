@@ -28,8 +28,7 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     private AutoFitTextureView _textureView;
     private Button _recordStartBtn;
     private IPresenterCameraControl _iPresenterCameraControl = null;
-    //    private static String _fileName = "my_video_record.mp4";
-    private static String _fileName = "mvp_mediacodec.mp4";//"new_video_record.3gp";//"video_record.3gp";
+    private static String _fileName = "mvp_mediacodec.mp4";
 
     private String _filePath = null;
     private File _fileRecord = null;

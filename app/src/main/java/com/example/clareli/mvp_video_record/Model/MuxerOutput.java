@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class MuxerOutput implements IMuxerOutput {
-    private MediaMuxer _muxer = null;
+    private MediaMuxer _muxer;
     private int videoTrackIndex = -1;
 
     public MuxerOutput(String dstPath, MediaFormat mediaFormat){
@@ -18,7 +18,7 @@ public class MuxerOutput implements IMuxerOutput {
             videoTrackIndex = _muxer.addTrack(mediaFormat);
             _muxer.start();
         } catch (IOException e) {
-            Log.d("CLE","MuxerOutput initial failxxxxx");
+
             e.printStackTrace();
         }
     }
@@ -35,22 +35,8 @@ public class MuxerOutput implements IMuxerOutput {
         if(_muxer != null) {
             _muxer.stop();
             _muxer.release();
+            _muxer = null;
         }
     }
 
-    @Override
-    public MediaMuxer getMuxer() {
-        return _muxer;
-    }
-
-    @Override
-    public void resetMuxerInfo(MediaFormat mediaFormat) {
-        _muxer.addTrack(mediaFormat);
-        _muxer.start();
-    }
-
-    @Override
-    public int getTrackIndex() {
-        return videoTrackIndex;
-    }
 }

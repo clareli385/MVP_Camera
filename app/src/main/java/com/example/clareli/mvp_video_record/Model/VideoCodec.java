@@ -3,7 +3,6 @@ package com.example.clareli.mvp_video_record.Model;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
-import android.util.Log;
 import android.view.Surface;
 
 import com.example.clareli.mvp_video_record.Presenter.PresenterCameraCallback;
@@ -12,17 +11,17 @@ import com.example.clareli.mvp_video_record.Presenter.PresenterCameraCallback;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class CameraCodec implements ICameraCodec {
-    private String TAG = "CameraCodec";
-    private MediaCodec _mCodec;
+public class VideoCodec implements IVideoCodec {
+    private String TAG = "VideoCodec";
+//    private MediaCodec _mCodec;
 
     private PresenterCameraCallback _presenterCallback;
 
-    private MediaFormat _mediaFormat;
-    private MediaCodec _mediaCodec;
+    private MediaFormat _videoFormat;
+    private MediaCodec _videoCodec;
     private Surface recordSurface;
 
-    public CameraCodec(PresenterCameraCallback cameraCallback) {
+    public VideoCodec(PresenterCameraCallback cameraCallback) {
         _presenterCallback = cameraCallback;
     }
 
@@ -30,28 +29,28 @@ public class CameraCodec implements ICameraCodec {
     public MediaCodec initCodec() {
 
         try { // video/avc is H.264 encode
-            _mediaCodec = MediaCodec.createEncoderByType("video/avc");
+            _videoCodec = MediaCodec.createEncoderByType("video/avc");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        _mediaFormat = MediaFormat.createVideoFormat("video/avc", 1920, 1080);
+        _videoFormat = MediaFormat.createVideoFormat("video/avc", 1920, 1080);
 
 
         int colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
         int videoBitrate = 8880000;//90000;
         int videoFramePerSecond = 30;   //FPS
         int iframeInterval = 2;
-        _mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
-        _mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, videoBitrate);
-        _mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, videoFramePerSecond);
-        _mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, iframeInterval);
+        _videoFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
+        _videoFormat.setInteger(MediaFormat.KEY_BIT_RATE, videoBitrate);
+        _videoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, videoFramePerSecond);
+        _videoFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, iframeInterval);
 
-        _mediaCodec.configure(_mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+        _videoCodec.configure(_videoFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 
-        recordSurface = _mediaCodec.createInputSurface();
+        recordSurface = _videoCodec.createInputSurface();
 
-        return _mediaCodec;
+        return _videoCodec;
     }
 
     @Override
@@ -61,7 +60,7 @@ public class CameraCodec implements ICameraCodec {
 
     @Override
     public void setCodecCallback() {
-        _mediaCodec.setCallback(new MediaCodec.Callback() {
+        _videoCodec.setCallback(new MediaCodec.Callback() {
             @Override
             public void onInputBufferAvailable(MediaCodec codec, int index) {
 
@@ -86,7 +85,7 @@ public class CameraCodec implements ICameraCodec {
                 _presenterCallback.getOutputFormatChanged(format);
             }
         });
-        _mediaCodec.start();
+        _videoCodec.start();
 
     }
 
@@ -94,12 +93,12 @@ public class CameraCodec implements ICameraCodec {
     @Override
     public void stopRecord() {
         try {
-            _mCodec.stop();
-            _mCodec.release();
-            _mCodec = null;
+            _videoCodec.stop();
+            _videoCodec.release();
+            _videoCodec = null;
         } catch (Exception e) {
             e.printStackTrace();
-            _mCodec = null;
+            _videoCodec = null;
         }
     }
 

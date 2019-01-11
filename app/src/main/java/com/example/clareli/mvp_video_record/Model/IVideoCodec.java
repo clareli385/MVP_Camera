@@ -4,7 +4,7 @@ import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.view.Surface;
 
-public interface ICameraCodec {
+public interface IVideoCodec {
     MediaCodec initCodec();
     Surface getSurface();
     void setCodecCallback();

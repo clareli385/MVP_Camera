@@ -14,10 +14,10 @@ import android.view.Surface;
 import android.view.TextureView;
 
 import com.example.clareli.mvp_video_record.MainActivity;
-import com.example.clareli.mvp_video_record.Model.CameraCodec;
+import com.example.clareli.mvp_video_record.Model.VideoCodec;
 import com.example.clareli.mvp_video_record.Model.ICamera;
 import com.example.clareli.mvp_video_record.Model.CameraClass;
-import com.example.clareli.mvp_video_record.Model.ICameraCodec;
+import com.example.clareli.mvp_video_record.Model.IVideoCodec;
 import com.example.clareli.mvp_video_record.Model.IMuxerOutput;
 import com.example.clareli.mvp_video_record.Model.MuxerOutput;
 import com.example.clareli.mvp_video_record.View.AutoFitTextureView;
@@ -45,7 +45,7 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
     private ViewErrorCallback _viewErrorCallback;
     private CameraDevice _cameraDevice;
     private AutoFitTextureView _textureView;
-    private ICameraCodec _cameraCodec;
+    private IVideoCodec _cameraCodec;
     private IMuxerOutput _muxerOutput;
     private SurfaceTexture _previewSurTexture;
     private Surface _previewSurface;
@@ -58,7 +58,7 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
         _presenterCallback = new PresenterCameraCallback(this);
         _iCamera = new CameraClass(_messageViewReference.get(), _presenterCallback);
         _viewErrorCallback = viewErrorCallback;
-        _cameraCodec = new CameraCodec(_presenterCallback);
+        _cameraCodec = new VideoCodec(_presenterCallback);
 
     }
 
@@ -228,7 +228,7 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
     }
 
 
-    /*from CameraCodec.java
+    /*from VideoCodec.java
     prepare for muxer to write data to file
      */
     @Override
@@ -237,7 +237,7 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
         _muxerOutput = new MuxerOutput(_dstFilePath, format);
     }
 
-    /*from CameraCodec.java
+    /*from VideoCodec.java
     prepare for muxer to write data to file
      */
     @Override

@@ -16,8 +16,8 @@ public interface ICamera {
     void closeCamera();
     void startBackgroundThread();
     void stopBackgroundThread();
-    void closePreviewSession();
     void createCaptureSession(Surface previewSurface, final Surface recordSurface, String filePath);
+    void closePreviewSession();
     boolean tryToGetAcquire();
 
 }

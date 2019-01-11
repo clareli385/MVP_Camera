@@ -7,15 +7,15 @@ import android.media.MediaFormat;
 import java.nio.ByteBuffer;
 
 public interface IPresenterCameraCallback {
+    void getCameraDevice(CameraDevice mCameraDevice);
     void errorCameraCallback();
     void errorCameraRecordCallback();
+    void errorEncoderCallback();
+    void errorDecoderCallback();
     void completedCameraCallback();
     void completedCameraRecordCallback();
-    void errorEncoderCallback();
     void completedEncoderCallback();
-    void errorDecoderCallback();
     void completedDecoderCallback();
-    void getCameraDevice(CameraDevice mCameraDevice);
     void onOutputFormatChanged(MediaFormat format);
     void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info, ByteBuffer encodedData);
 

@@ -6,7 +6,7 @@ import android.view.Surface;
 
 public interface ICameraCodec {
     MediaCodec initCodec();
-    void stopRecord();
-    void setCodecCallback();
     Surface getSurface();
+    void setCodecCallback();
+    void stopRecord();
 }

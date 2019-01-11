@@ -54,6 +54,10 @@ public class CameraCodec implements ICameraCodec {
         return _mediaCodec;
     }
 
+    @Override
+    public Surface getSurface() {
+        return recordSurface;
+    }
 
     @Override
     public void setCodecCallback() {
@@ -66,7 +70,6 @@ public class CameraCodec implements ICameraCodec {
             @Override
             public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info) {
                 ByteBuffer buffer = codec.getOutputBuffer(index);
-//                Log.d(TAG, "size = " + String.valueOf(info.size));
                 _presenterCallback.getOutputBufferAvailable(codec, index, info, buffer);
 
                 codec.releaseOutputBuffer(index, false);
@@ -87,13 +90,7 @@ public class CameraCodec implements ICameraCodec {
 
     }
 
-    @Override
-    public Surface getSurface() {
-        return recordSurface;
-    }
 
-
-    //onSurfaceTextureDestroyed
     @Override
     public void stopRecord() {
         try {

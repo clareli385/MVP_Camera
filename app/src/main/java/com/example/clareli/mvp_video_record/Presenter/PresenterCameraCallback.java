@@ -11,33 +11,42 @@ public class PresenterCameraCallback {
     public PresenterCameraCallback(IPresenterCameraCallback callback){
         _cameraCallback = callback;
     }
-    public void completedPreview(){
-        _cameraCallback.completedCameraCallback();
+    public void getCameraDevice(CameraDevice cameraDevice){
+        _cameraCallback.getCameraDevice(cameraDevice);
     }
+
     public void errorPreview(){
         _cameraCallback.errorCameraCallback();
     }
-    public void completedRecord(){
-        _cameraCallback.completedCameraRecordCallback();
-    }
+
     public void errorRecord(){
         _cameraCallback.errorCameraRecordCallback();
     }
-    public void completedFromEncoder(){
-        _cameraCallback.completedEncoderCallback();
-    }
+
     public void errorFromEncoder(){
         _cameraCallback.errorEncoderCallback();
+    }
+
+    public void errorFromDecoder(){
+        _cameraCallback.errorDecoderCallback();
+    }
+
+    public void completedPreview(){
+        _cameraCallback.completedCameraCallback();
+    }
+
+    public void completedRecord(){
+        _cameraCallback.completedCameraRecordCallback();
+    }
+
+    public void completedFromEncoder(){
+        _cameraCallback.completedEncoderCallback();
     }
     public void completedFromDecoder(){
         _cameraCallback.completedDecoderCallback();
     }
-    public void errorFromDecoder(){
-        _cameraCallback.errorDecoderCallback();
-    }
-    public void getCameraDevice(CameraDevice cameraDevice){
-        _cameraCallback.getCameraDevice(cameraDevice);
-    }
+
+
     public void getOutputFormatChanged(MediaFormat format){
         _cameraCallback.onOutputFormatChanged(format);
     }

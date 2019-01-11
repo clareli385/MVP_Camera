@@ -26,6 +26,7 @@ import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_PERMISSI
 
 public class MainActivity extends AppCompatActivity implements IViewErrorCallback {
     private AutoFitTextureView _textureView;
+    private String TAG = "MainActivity";
     private Button _recordStartBtn;
     private IPresenterCameraControl _iPresenterCameraControl = null;
     private static String _fileName = "mvp_mediacodec.mp4";
@@ -129,6 +130,6 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
 
     @Override
     public void showErrorMsg(String msg) {
-        Log.i("CLE", "error:" + msg);
+        Log.i(TAG, "error:" + msg);
     }
 }

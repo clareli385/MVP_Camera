@@ -144,39 +144,6 @@ public class CameraClass implements ICamera {
 
     }
 
-
-    private CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
-
-        @Override
-        public void onOpened(@NonNull CameraDevice camera) {
-            _cameraDevice = camera;
-            _cameraCallback.getCameraDevice(_cameraDevice);
-            Surface previewSurface = new Surface(_previewSurfaceTexture);
-            startPreview(previewSurface);
-            _cameraOpenCloseLock.release();
-
-        }
-
-        @Override
-        public void onDisconnected(@NonNull CameraDevice camera) {
-            _cameraOpenCloseLock.release();
-            camera.close();
-            _cameraDevice = null;
-        }
-
-        @Override
-        public void onError(@NonNull CameraDevice camera, int error) {
-            _cameraOpenCloseLock.release();
-            camera.close();
-            _cameraDevice = null;
-
-            Activity activity = _messageViewReference.get();
-            if (null != activity) {
-                _cameraCallback.errorPreview();
-            }
-        }
-    };
-
     @Override
     public void startBackgroundThread() {
         _backgroundThread = new HandlerThread("CameraBackground");
@@ -195,14 +162,6 @@ public class CameraClass implements ICamera {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        }
-    }
-
-    @Override
-    public void closePreviewSession() {
-        if (_previewSession != null) {
-            _previewSession.close();
-            _previewSession = null;
         }
     }
 
@@ -243,6 +202,14 @@ public class CameraClass implements ICamera {
     }
 
     @Override
+    public void closePreviewSession() {
+        if (_previewSession != null) {
+            _previewSession.close();
+            _previewSession = null;
+        }
+    }
+
+    @Override
     public boolean tryToGetAcquire() {
         try {
             if (!_cameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
@@ -255,5 +222,38 @@ public class CameraClass implements ICamera {
             return true;
         }
     }
+
+    private CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
+
+        @Override
+        public void onOpened(@NonNull CameraDevice camera) {
+            _cameraDevice = camera;
+            _cameraCallback.getCameraDevice(_cameraDevice);
+            Surface previewSurface = new Surface(_previewSurfaceTexture);
+            startPreview(previewSurface);
+            _cameraOpenCloseLock.release();
+
+        }
+
+        @Override
+        public void onDisconnected(@NonNull CameraDevice camera) {
+            _cameraOpenCloseLock.release();
+            camera.close();
+            _cameraDevice = null;
+        }
+
+        @Override
+        public void onError(@NonNull CameraDevice camera, int error) {
+            _cameraOpenCloseLock.release();
+            camera.close();
+            _cameraDevice = null;
+
+            Activity activity = _messageViewReference.get();
+            if (null != activity) {
+                _cameraCallback.errorPreview();
+            }
+        }
+    };
+
 
 }

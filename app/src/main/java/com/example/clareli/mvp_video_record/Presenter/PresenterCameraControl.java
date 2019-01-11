@@ -39,7 +39,7 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
     private final WeakReference<Activity> _messageViewReference;
     private String TAG = "PresenterCameraControl";
     private ICamera _iCamera;
-    private PresenterCameraCallback _cameraCallback;
+    private PresenterCameraCallback _presenterCallback;
     private Object _systemService;
     private String[] _cameraPermission = {WRITE_EXTERNAL_STORAGE, CAMERA, RECORD_AUDIO};
     private ViewErrorCallback _viewErrorCallback;
@@ -52,42 +52,20 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
     private String _dstFilePath;
 
 
-
+    //constructor
     public PresenterCameraControl(Activity activity, ViewErrorCallback viewErrorCallback) {
         _messageViewReference = new WeakReference<>(activity);
-        _cameraCallback = new PresenterCameraCallback(this);
-        _iCamera = new CameraClass(_messageViewReference.get(), _cameraCallback);
-
+        _presenterCallback = new PresenterCameraCallback(this);
+        _iCamera = new CameraClass(_messageViewReference.get(), _presenterCallback);
         _viewErrorCallback = viewErrorCallback;
-        _cameraCodec = new CameraCodec(_cameraCallback);
+        _cameraCodec = new CameraCodec(_presenterCallback);
 
     }
 
-
-    @Override
-    public void videoRecordStart(String filePath) {
-        if (_cameraDevice != null) {
-            _iCamera.closePreviewSession();
-            _previewSurTexture = _textureView.getSurfaceTexture();
-            assert _previewSurTexture != null;
-            _previewSurTexture.setDefaultBufferSize(_textureView.getWidth(), _textureView.getHeight());
-            _dstFilePath = filePath;
-            _cameraCodec.initCodec();
-            _cameraCodec.setCodecCallback();
-            _previewSurface = new Surface(_previewSurTexture);
-            _iCamera.createCaptureSession(_previewSurface, _cameraCodec.getSurface(), filePath);
-
-        }
-    }
-
-    @Override
-    public void videoRecordStop() {
-        _cameraCodec.stopRecord();
-        _muxerOutput.stopMuxer();
-        _iCamera.startPreview(_previewSurface);
-    }
-
-
+    /*
+   textrure view will be started after mSurfaceTextureListener ->onSurfaceTextureAvailable
+   So finally we need to open camera for preview
+    */
     @Override
     public void videoPreviewStart(AutoFitTextureView textureView, IViewErrorCallback iViewErrorCallback) {
         _textureView = textureView;
@@ -106,6 +84,9 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
 
     }
 
+    /*
+    default select index 0 camera
+     */
     public String selectCamera() {
         String cameraId = null;
         if (_systemService == null)
@@ -126,6 +107,46 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
     public void closeCamera() {
         _iCamera.closeCamera();
         _iCamera.stopBackgroundThread();
+    }
+
+    /*
+    start a background to do preview
+     */
+    @Override
+    public void startBackground() {
+        _iCamera.startBackgroundThread();
+    }
+
+
+    /*  start to do video record
+        1._iCamera.createCaptureSession(...) will pass preview and record surface to builder.addTarget()
+        after 2, _cameraCodec setCodecCallback will be called by android system
+        2.setup _cameraCodec.setCodecCallback() will feedback result to onOutputFormatChanged() and onOutputBufferAvailable()
+     */
+    @Override
+    public void videoRecordStart(String filePath) {
+        if (_cameraDevice != null) {
+            _iCamera.closePreviewSession();
+            _previewSurTexture = _textureView.getSurfaceTexture();
+            assert _previewSurTexture != null;
+            _previewSurTexture.setDefaultBufferSize(_textureView.getWidth(), _textureView.getHeight());
+            _dstFilePath = filePath;
+            _cameraCodec.initCodec();
+            _cameraCodec.setCodecCallback();
+            _previewSurface = new Surface(_previewSurTexture);
+            _iCamera.createCaptureSession(_previewSurface, _cameraCodec.getSurface(), filePath);
+
+        }
+    }
+
+    /*
+    press stop record button will stop codec, muxer and camera preview.
+     */
+    @Override
+    public void videoRecordStop() {
+        _cameraCodec.stopRecord();
+        _muxerOutput.stopMuxer();
+        _iCamera.startPreview(_previewSurface);
     }
 
     private TextureView.SurfaceTextureListener mSurfaceTextureListener = new TextureView.SurfaceTextureListener() {
@@ -158,10 +179,6 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
         }
     };
 
-    @Override
-    public void startBackground() {
-        _iCamera.startBackgroundThread();
-    }
 
 
     @Override
@@ -172,7 +189,6 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
     @Override
     public void errorCameraRecordCallback() {
         _viewErrorCallback.viewShowErrorDialog("Camera record error");
-
 
     }
 
@@ -217,10 +233,8 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
      */
     @Override
     public void onOutputFormatChanged(MediaFormat format) {
+        //the format include "csd-0" and "csd-1" byte buffers
         _muxerOutput = new MuxerOutput(_dstFilePath, format);
-        ByteBuffer buffer0 = format.getByteBuffer("csd-0");    // SPS
-        ByteBuffer buffer1 = format.getByteBuffer("csd-1");    // PPS
-        Log.i(TAG, "buffer0 size:" + buffer0.getLong() + " ,buffer1:" + buffer1.getLong());
     }
 
     /*from CameraCodec.java

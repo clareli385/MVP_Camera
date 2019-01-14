@@ -6,7 +6,7 @@ import android.media.MediaFormat;
 
 import java.nio.ByteBuffer;
 
-public interface IPresenterCameraCallback {
+public interface IPresenterCallback {
     void getCameraDevice(CameraDevice mCameraDevice);
     void errorCameraCallback();
     void errorCameraRecordCallback();

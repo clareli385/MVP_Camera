@@ -10,8 +10,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
-import com.example.clareli.mvp_video_record.Presenter.IPresenterCameraControl;
-import com.example.clareli.mvp_video_record.Presenter.PresenterCameraControl;
+import com.example.clareli.mvp_video_record.Presenter.IPresenterControl;
+import com.example.clareli.mvp_video_record.Presenter.PresenterControl;
 import com.example.clareli.mvp_video_record.View.AutoFitTextureView;
 import com.example.clareli.mvp_video_record.View.IViewErrorCallback;
 import com.example.clareli.mvp_video_record.View.ViewErrorCallback;
@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     private AutoFitTextureView _textureView;
     private String TAG = "MainActivity";
     private Button _recordStartBtn;
-    private IPresenterCameraControl _iPresenterCameraControl = null;
+    private IPresenterControl _iPresenterControl = null;
     private static String _fileName = "mvp_mediacodec.mp4";
 
     private String _filePath = null;
@@ -51,15 +51,15 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     @Override
     protected void onResume() {
         super.onResume();
-        _iPresenterCameraControl.startBackground();
-        _iPresenterCameraControl.videoPreviewStart(_textureView, this);
+        _iPresenterControl.startBackground();
+        _iPresenterControl.videoPreviewStart(_textureView, this);
 
     }
 
     @Override
     protected void onPause() {
-        if (_iPresenterCameraControl != null)
-            _iPresenterCameraControl.closeCamera();
+        if (_iPresenterControl != null)
+            _iPresenterControl.closeCamera();
         super.onPause();
 
     }
@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
 
     public void initPresenter() {
         _viewErrorCallback = new ViewErrorCallback(this);
-        _iPresenterCameraControl = new PresenterCameraControl(this, _viewErrorCallback);
+        _iPresenterControl = new PresenterControl(this, _viewErrorCallback);
 
     }
 
@@ -89,12 +89,12 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
                     if (_isRecordingVideo == false) {
                         _isRecordingVideo = true;
                         _recordStartBtn.setText("Stop");
-                        _iPresenterCameraControl.videoRecordStart(_fileRecord.getAbsolutePath());
+                        _iPresenterControl.videoRecordStart(_fileRecord.getAbsolutePath());
 
                     } else {
                         _isRecordingVideo = false;
                         _recordStartBtn.setText("Record");
-                        _iPresenterCameraControl.videoRecordStop();
+                        _iPresenterControl.videoRecordStop();
                     }
                     break;
             }

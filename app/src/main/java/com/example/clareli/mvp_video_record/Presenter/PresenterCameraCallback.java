@@ -7,8 +7,8 @@ import android.media.MediaFormat;
 import java.nio.ByteBuffer;
 
 public class PresenterCameraCallback {
-    private IPresenterCameraCallback _cameraCallback;
-    public PresenterCameraCallback(IPresenterCameraCallback callback){
+    private IPresenterCallback _cameraCallback;
+    public PresenterCameraCallback(IPresenterCallback callback){
         _cameraCallback = callback;
     }
     public void getCameraDevice(CameraDevice cameraDevice){

@@ -11,8 +11,8 @@ import com.example.clareli.mvp_video_record.Presenter.PresenterCameraCallback;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class VideoCodec implements IVideoCodec {
-    private String TAG = "VideoCodec";
+public class VideoEncoder implements IVideoEncoder {
+    private String TAG = "VideoEncoder";
 //    private MediaCodec _mCodec;
 
     private PresenterCameraCallback _presenterCallback;
@@ -21,7 +21,7 @@ public class VideoCodec implements IVideoCodec {
     private MediaCodec _videoCodec;
     private Surface recordSurface;
 
-    public VideoCodec(PresenterCameraCallback cameraCallback) {
+    public VideoEncoder(PresenterCameraCallback cameraCallback) {
         _presenterCallback = cameraCallback;
     }
 

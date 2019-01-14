@@ -14,10 +14,10 @@ import android.view.Surface;
 import android.view.TextureView;
 
 import com.example.clareli.mvp_video_record.MainActivity;
-import com.example.clareli.mvp_video_record.Model.VideoCodec;
+import com.example.clareli.mvp_video_record.Model.IVideoEncoder;
+import com.example.clareli.mvp_video_record.Model.VideoEncoder;
 import com.example.clareli.mvp_video_record.Model.ICamera;
 import com.example.clareli.mvp_video_record.Model.CameraClass;
-import com.example.clareli.mvp_video_record.Model.IVideoCodec;
 import com.example.clareli.mvp_video_record.Model.IMuxerOutput;
 import com.example.clareli.mvp_video_record.Model.MuxerOutput;
 import com.example.clareli.mvp_video_record.View.AutoFitTextureView;
@@ -28,24 +28,21 @@ import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 
 
-import static android.Manifest.permission.CAMERA;
-import static android.Manifest.permission.RECORD_AUDIO;
-import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static com.example.clareli.mvp_video_record.Util.IConstant.REQUEST_PERMISSION_CODE;
 import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_PERMISSIONS;
 import static com.example.clareli.mvp_video_record.Util.PermissionCheck.hasPermissionsGranted;
 import static com.example.clareli.mvp_video_record.Util.PermissionCheck.requestPermission;
 
-public class PresenterCameraControl implements IPresenterCameraControl, IPresenterCameraCallback {
+public class PresenterControl implements IPresenterControl, IPresenterCallback {
     private final WeakReference<Activity> _messageViewReference;
-    private String TAG = "PresenterCameraControl";
+    private String TAG = "PresenterControl";
     private ICamera _iCamera;
     private PresenterCameraCallback _presenterCallback;
     private Object _systemService;
     private ViewErrorCallback _viewErrorCallback;
     private CameraDevice _cameraDevice;
     private AutoFitTextureView _textureView;
-    private IVideoCodec _cameraCodec;
+    private IVideoEncoder _cameraCodec;
     private IMuxerOutput _muxerOutput;
     private SurfaceTexture _previewSurTexture;
     private Surface _previewSurface;
@@ -53,12 +50,12 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
 
 
     //constructor
-    public PresenterCameraControl(Activity activity, ViewErrorCallback viewErrorCallback) {
+    public PresenterControl(Activity activity, ViewErrorCallback viewErrorCallback) {
         _messageViewReference = new WeakReference<>(activity);
         _presenterCallback = new PresenterCameraCallback(this);
         _iCamera = new CameraClass(_messageViewReference.get(), _presenterCallback);
         _viewErrorCallback = viewErrorCallback;
-        _cameraCodec = new VideoCodec(_presenterCallback);
+        _cameraCodec = new VideoEncoder(_presenterCallback);
 
     }
 
@@ -228,7 +225,7 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
     }
 
 
-    /*from VideoCodec.java
+    /*from VideoEncoder.java
     prepare for muxer to write data to file
      */
     @Override
@@ -237,7 +234,7 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
         _muxerOutput = new MuxerOutput(_dstFilePath, format);
     }
 
-    /*from VideoCodec.java
+    /*from VideoEncoder.java
     prepare for muxer to write data to file
      */
     @Override

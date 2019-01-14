@@ -69,7 +69,7 @@ public class VideoCodec implements IVideoCodec {
             @Override
             public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info) {
                 ByteBuffer buffer = codec.getOutputBuffer(index);
-                _presenterCallback.getOutputBufferAvailable(codec, index, info, buffer);
+                _presenterCallback.getOutputBufferAvailable(info, buffer);
 
                 codec.releaseOutputBuffer(index, false);
 

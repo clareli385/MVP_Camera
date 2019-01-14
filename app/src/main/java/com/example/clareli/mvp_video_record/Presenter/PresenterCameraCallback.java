@@ -51,8 +51,8 @@ public class PresenterCameraCallback {
         _cameraCallback.onOutputFormatChanged(format);
     }
 
-    public void getOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info, ByteBuffer encodedData){
-        _cameraCallback.onOutputBufferAvailable(codec, index, info, encodedData);
+    public void getOutputBufferAvailable(MediaCodec.BufferInfo info, ByteBuffer encodedData){
+        _cameraCallback.onOutputBufferAvailable(info, encodedData);
     }
 
 }

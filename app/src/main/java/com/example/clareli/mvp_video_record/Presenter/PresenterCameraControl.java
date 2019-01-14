@@ -32,6 +32,7 @@ import static android.Manifest.permission.CAMERA;
 import static android.Manifest.permission.RECORD_AUDIO;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static com.example.clareli.mvp_video_record.Util.IConstant.REQUEST_PERMISSION_CODE;
+import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_PERMISSIONS;
 import static com.example.clareli.mvp_video_record.Util.PermissionCheck.hasPermissionsGranted;
 import static com.example.clareli.mvp_video_record.Util.PermissionCheck.requestPermission;
 
@@ -41,7 +42,6 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
     private ICamera _iCamera;
     private PresenterCameraCallback _presenterCallback;
     private Object _systemService;
-    private String[] _cameraPermission = {WRITE_EXTERNAL_STORAGE, CAMERA, RECORD_AUDIO};
     private ViewErrorCallback _viewErrorCallback;
     private CameraDevice _cameraDevice;
     private AutoFitTextureView _textureView;
@@ -70,7 +70,7 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
     public void videoPreviewStart(AutoFitTextureView textureView, IViewErrorCallback iViewErrorCallback) {
         _textureView = textureView;
         if (textureView.isAvailable()) {
-            if (hasPermissionsGranted(_messageViewReference.get(), _cameraPermission)) {
+            if (hasPermissionsGranted(_messageViewReference.get(), VIDEO_PERMISSIONS)) {
                 String cameraId = selectCamera();
                 CameraManager manager = (CameraManager) _systemService;
                 _iCamera.openCamera(textureView.getWidth(), textureView.getHeight(), cameraId, manager, textureView.getSurfaceTexture());
@@ -153,12 +153,12 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
 
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-            if (hasPermissionsGranted(_messageViewReference.get(), _cameraPermission)) {
+            if (hasPermissionsGranted(_messageViewReference.get(), VIDEO_PERMISSIONS)) {
                 String cameraId = selectCamera();
                 CameraManager manager = (CameraManager) _systemService;
                 _iCamera.openCamera(width, height, cameraId, manager, surface);
             } else {
-                requestPermission((MainActivity) (_messageViewReference.get()), _cameraPermission, REQUEST_PERMISSION_CODE);
+                requestPermission((MainActivity) (_messageViewReference.get()), VIDEO_PERMISSIONS, REQUEST_PERMISSION_CODE);
                 return;
             }
         }
@@ -241,7 +241,7 @@ public class PresenterCameraControl implements IPresenterCameraControl, IPresent
     prepare for muxer to write data to file
      */
     @Override
-    public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info, ByteBuffer encodedData) {
+    public void onOutputBufferAvailable(MediaCodec.BufferInfo info, ByteBuffer encodedData) {
         Log.i(TAG,"info_presentationTimeUs:"+info.presentationTimeUs+", offset:"+info.offset);
         _muxerOutput.writeSampleData(encodedData, info);
     }

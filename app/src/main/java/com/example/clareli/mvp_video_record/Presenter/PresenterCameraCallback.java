@@ -23,27 +23,8 @@ public class PresenterCameraCallback {
         _cameraCallback.errorCameraRecordCallback();
     }
 
-    public void errorFromEncoder(){
-        _cameraCallback.errorEncoderCallback();
-    }
-
     public void errorFromDecoder(){
         _cameraCallback.errorDecoderCallback();
-    }
-
-    public void completedPreview(){
-        _cameraCallback.completedCameraCallback();
-    }
-
-    public void completedRecord(){
-        _cameraCallback.completedCameraRecordCallback();
-    }
-
-    public void completedFromEncoder(){
-        _cameraCallback.completedEncoderCallback();
-    }
-    public void completedFromDecoder(){
-        _cameraCallback.completedDecoderCallback();
     }
 
 
@@ -57,6 +38,10 @@ public class PresenterCameraCallback {
 
     public void getMuxerErrorMsg(String msg){
         _cameraCallback.muxerErrorCallback(msg);
+    }
+
+    public void getEncodedErrorMsg(String msg){
+        _cameraCallback.encodedErrorCallback(msg);
     }
 
 }

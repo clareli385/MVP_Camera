@@ -8,6 +8,7 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 
 import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.util.Log;
@@ -15,8 +16,8 @@ import android.view.Surface;
 import android.view.TextureView;
 
 import com.example.clareli.mvp_video_record.MainActivity;
-import com.example.clareli.mvp_video_record.Model.IVideoEncoder;
-import com.example.clareli.mvp_video_record.Model.VideoEncoder;
+import com.example.clareli.mvp_video_record.Model.LUEncodedVideo;
+import com.example.clareli.mvp_video_record.Model.IEncodedVideo;
 import com.example.clareli.mvp_video_record.Model.ICamera;
 import com.example.clareli.mvp_video_record.Model.CameraClass;
 import com.example.clareli.mvp_video_record.Model.IMuxer;
@@ -43,12 +44,12 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
     private ViewErrorCallback _viewErrorCallback;
     private CameraDevice _cameraDevice;
     private AutoFitTextureView _textureView;
-    private IVideoEncoder _cameraCodec;
+    private IEncodedVideo _cameraCodec;
     private IMuxer _muxerOutput;
     private SurfaceTexture _previewSurTexture;
     private Surface _previewSurface;
     private String _dstFilePath;
-    private String callbackErrorMsg;
+    private String _callbackErrorMsg;
 
 
     //constructor
@@ -57,7 +58,7 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
         _presenterCallback = new PresenterCameraCallback(this);
         _iCamera = new CameraClass(_messageViewReference.get(), _presenterCallback);
         _viewErrorCallback = viewErrorCallback;
-        _cameraCodec = new VideoEncoder(_presenterCallback);
+        _cameraCodec = new LUEncodedVideo(_presenterCallback);
 
     }
 
@@ -118,21 +119,26 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
 
 
     /*  start to do video record
-        1._iCamera.createCaptureSession(...) will pass preview and record surface to builder.addTarget()
-        after 2, _cameraCodec setCodecCallback will be called by android system
-        2.setup _cameraCodec.setCodecCallback() will feedback result to onVideoOutputFormatChanged() and onVideoOutputBufferAvailable()
+        _iCamera.createCaptureSession(...) will pass preview , record surface to builder.addTarget() and set Codec Callback
      */
     @Override
     public void videoRecordStart(String filePath) {
+        String _encodedVideoType = "video/avc";
+        int colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
+        int videoBitrate = 8880000;
+        int videoFramePerSecond = 30;   //FPS
+        int iFrameInterval = 2;
+        int width = 1920;
+        int height= 1080;
+
         if (_cameraDevice != null) {
             _iCamera.closePreviewSession();
             _previewSurTexture = _textureView.getSurfaceTexture();
             assert _previewSurTexture != null;
             _previewSurTexture.setDefaultBufferSize(_textureView.getWidth(), _textureView.getHeight());
             _dstFilePath = filePath;
-            _cameraCodec.configuredVideoCodec();
-            _cameraCodec.setCodecCallback();
-            _cameraCodec.startRecord();
+            _cameraCodec.configuredVideoCodec(_encodedVideoType, colorFormat, videoBitrate, videoFramePerSecond, iFrameInterval, width, height);
+            _cameraCodec.startEncode();
             _previewSurface = new Surface(_previewSurTexture);
             _iCamera.createCaptureSession(_previewSurface, _cameraCodec.getSurface(), filePath);
 
@@ -144,7 +150,7 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
      */
     @Override
     public void videoRecordStop() {
-        _cameraCodec.stopRecord();
+        _cameraCodec.stopEncode();
         _muxerOutput.stopMuxer();
         _iCamera.startPreview(_previewSurface);
     }
@@ -169,7 +175,7 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
 
         @Override
         public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-            _cameraCodec.stopRecord();
+            _cameraCodec.stopEncode();
             return true;
         }
 
@@ -192,35 +198,12 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
 
     }
 
-    @Override
-    public void completedCameraCallback() {
-
-    }
-
-    @Override
-    public void completedCameraRecordCallback() {
-
-    }
-
-    @Override
-    public void errorEncoderCallback() {
-
-    }
-
-    @Override
-    public void completedEncoderCallback() {
-
-    }
 
     @Override
     public void errorDecoderCallback() {
 
     }
 
-    @Override
-    public void completedDecoderCallback() {
-
-    }
 
     @Override
     public void getCameraDevice(CameraDevice mCameraDevice) {
@@ -228,24 +211,25 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
     }
 
 
-    /*from VideoEncoder.java
+    /*from LUEncodedVideo.java
     prepare for muxer to write data to file
      */
     @Override
     public void onVideoOutputFormatChanged(MediaFormat format) {
         //the format include "csd-0" and "csd-1" byte buffers
-        _muxerOutput = new LUMuxer(_dstFilePath, format, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4, _presenterCallback);
+        int saveOutputFormat = MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4;
+        _muxerOutput = new LUMuxer(_dstFilePath, format, saveOutputFormat, _presenterCallback);
 
     }
 
-    /*from VideoEncoder.java
+    /*from LUEncodedVideo.java
     prepare for muxer to write data to file
      */
     @Override
     public void onVideoOutputBufferAvailable(MediaCodec.BufferInfo info, ByteBuffer encodedData) {
         Log.i(TAG,"info_presentationTimeUs:"+info.presentationTimeUs+", offset:"+info.offset);
         if(_muxerOutput.writeSampleData(encodedData, info) == false) {
-            //TODO show error dialog of callbackErrorMsg
+            //TODO show error dialog of _callbackErrorMsg
 
         }
     }
@@ -253,7 +237,13 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
     @Override
     public void muxerErrorCallback(String msg) {
         Log.i(TAG, msg);
-        callbackErrorMsg = msg;
+        _callbackErrorMsg = msg;
+    }
+
+    @Override
+    public void encodedErrorCallback(String msg) {
+        Log.i(TAG, msg);
+        _callbackErrorMsg = msg;
     }
 
 }

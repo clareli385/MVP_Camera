@@ -10,14 +10,10 @@ public interface IPresenterCallback {
     void getCameraDevice(CameraDevice mCameraDevice);
     void errorCameraCallback();
     void errorCameraRecordCallback();
-    void errorEncoderCallback();
     void errorDecoderCallback();
-    void completedCameraCallback();
-    void completedCameraRecordCallback();
-    void completedEncoderCallback();
-    void completedDecoderCallback();
     void onVideoOutputFormatChanged(MediaFormat format);
     void onVideoOutputBufferAvailable(MediaCodec.BufferInfo info, ByteBuffer encodedData);
     void muxerErrorCallback(String msg);
+    void encodedErrorCallback(String msg);
 
 }

@@ -16,7 +16,8 @@ public interface IPresenterCallback {
     void completedCameraRecordCallback();
     void completedEncoderCallback();
     void completedDecoderCallback();
-    void onOutputFormatChanged(MediaFormat format);
-    void onOutputBufferAvailable(MediaCodec.BufferInfo info, ByteBuffer encodedData);
+    void onVideoOutputFormatChanged(MediaFormat format);
+    void onVideoOutputBufferAvailable(MediaCodec.BufferInfo info, ByteBuffer encodedData);
+    void muxerErrorCallback(String msg);
 
 }

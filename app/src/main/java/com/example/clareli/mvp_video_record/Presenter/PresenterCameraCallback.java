@@ -47,12 +47,16 @@ public class PresenterCameraCallback {
     }
 
 
-    public void getOutputFormatChanged(MediaFormat format){
-        _cameraCallback.onOutputFormatChanged(format);
+    public void getVideoOutputFormatChanged(MediaFormat format){
+        _cameraCallback.onVideoOutputFormatChanged(format);
     }
 
-    public void getOutputBufferAvailable(MediaCodec.BufferInfo info, ByteBuffer encodedData){
-        _cameraCallback.onOutputBufferAvailable(info, encodedData);
+    public void getVideoOutputBufferAvailable(MediaCodec.BufferInfo info, ByteBuffer encodedData){
+        _cameraCallback.onVideoOutputBufferAvailable(info, encodedData);
+    }
+
+    public void getMuxerErrorMsg(String msg){
+        _cameraCallback.muxerErrorCallback(msg);
     }
 
 }

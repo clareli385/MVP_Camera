@@ -6,7 +6,7 @@ import android.media.MediaMuxer;
 
 import java.nio.ByteBuffer;
 
-public interface IMuxerOutput {
-    void writeSampleData(ByteBuffer encodedData, MediaCodec.BufferInfo info);
-    void stopMuxer();
+public interface IMuxer {
+    boolean writeSampleData(ByteBuffer encodedData, MediaCodec.BufferInfo info);
+    boolean stopMuxer();
 }

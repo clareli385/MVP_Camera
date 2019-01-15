@@ -26,7 +26,7 @@ public class VideoEncoder implements IVideoEncoder {
     }
 
     @Override
-    public MediaCodec initCodec() {
+    public void configuredVideoCodec() {
 
         try { // video/avc is H.264 encode
             _videoCodec = MediaCodec.createEncoderByType("video/avc");
@@ -50,7 +50,6 @@ public class VideoEncoder implements IVideoEncoder {
 
         recordSurface = _videoCodec.createInputSurface();
 
-        return _videoCodec;
     }
 
     @Override
@@ -69,7 +68,7 @@ public class VideoEncoder implements IVideoEncoder {
             @Override
             public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info) {
                 ByteBuffer buffer = codec.getOutputBuffer(index);
-                _presenterCallback.getOutputBufferAvailable(info, buffer);
+                _presenterCallback.getVideoOutputBufferAvailable(info, buffer);
 
                 codec.releaseOutputBuffer(index, false);
 
@@ -82,11 +81,16 @@ public class VideoEncoder implements IVideoEncoder {
 
             @Override
             public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {
-                _presenterCallback.getOutputFormatChanged(format);
+                _presenterCallback.getVideoOutputFormatChanged(format);
             }
         });
-        _videoCodec.start();
 
+    }
+
+    @Override
+    public void startRecord() {
+        if(_videoCodec != null)
+            _videoCodec.start();
     }
 
 

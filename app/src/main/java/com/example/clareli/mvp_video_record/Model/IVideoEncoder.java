@@ -5,8 +5,9 @@ import android.media.MediaFormat;
 import android.view.Surface;
 
 public interface IVideoEncoder {
-    MediaCodec initCodec();
+    void configuredVideoCodec();
     Surface getSurface();
     void setCodecCallback();
+    void startRecord();
     void stopRecord();
 }

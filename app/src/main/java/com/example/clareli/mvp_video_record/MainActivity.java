@@ -66,7 +66,7 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
 
     public void findViews() {
         _textureView = findViewById(R.id.texture);
-        _recordStartBtn = findViewById(R.id.take_photo);
+        _recordStartBtn = findViewById(R.id.record_btn);
         _recordStartBtn.setOnClickListener(recordClickListener);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
             //save to internal storage D
@@ -85,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
         @Override
         public void onClick(View v) {
             switch (v.getId()) {
-                case R.id.take_photo:
+                case R.id.record_btn:
                     if (_isRecordingVideo == false) {
                         _isRecordingVideo = true;
                         _recordStartBtn.setText("Stop");

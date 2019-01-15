@@ -8,8 +8,7 @@ import java.nio.ByteBuffer;
 
 public interface IPresenterCallback {
     void getCameraDevice(CameraDevice mCameraDevice);
-    void errorCameraCallback();
-    void errorCameraRecordCallback();
+    void errorCameraCallback(String msg);
     void errorDecoderCallback();
     void onVideoOutputFormatChanged(MediaFormat format);
     void onVideoOutputBufferAvailable(MediaCodec.BufferInfo info, ByteBuffer encodedData);

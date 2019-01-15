@@ -4,7 +4,7 @@ import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 
-import com.example.clareli.mvp_video_record.Presenter.PresenterCameraCallback;
+import com.example.clareli.mvp_video_record.Presenter.LUPresenterCameraCallback;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -13,9 +13,9 @@ public class LUMuxer implements IMuxer {
     private MediaMuxer _muxer;
     private int _trackIndex = -1;
     private String _mime;
-    private PresenterCameraCallback _presenterCallback;
+    private LUPresenterCameraCallback _presenterCallback;
 
-    public LUMuxer(String dstPath, MediaFormat mediaFormat, int outputFormat, PresenterCameraCallback presenterCallback){
+    public LUMuxer(String dstPath, MediaFormat mediaFormat, int outputFormat, LUPresenterCameraCallback presenterCallback){
         try {
             _muxer = new MediaMuxer(dstPath, outputFormat);
             _mime = mediaFormat.getString(MediaFormat.KEY_MIME);

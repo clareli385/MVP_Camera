@@ -6,22 +6,19 @@ import android.media.MediaFormat;
 
 import java.nio.ByteBuffer;
 
-public class PresenterCameraCallback {
+public class LUPresenterCameraCallback {
     private IPresenterCallback _cameraCallback;
-    public PresenterCameraCallback(IPresenterCallback callback){
+    public LUPresenterCameraCallback(IPresenterCallback callback){
         _cameraCallback = callback;
     }
     public void getCameraDevice(CameraDevice cameraDevice){
         _cameraCallback.getCameraDevice(cameraDevice);
     }
 
-    public void errorPreview(){
-        _cameraCallback.errorCameraCallback();
+    public void errorPreview(String msg){
+        _cameraCallback.errorCameraCallback(msg);
     }
 
-    public void errorRecord(){
-        _cameraCallback.errorCameraRecordCallback();
-    }
 
     public void errorFromDecoder(){
         _cameraCallback.errorDecoderCallback();

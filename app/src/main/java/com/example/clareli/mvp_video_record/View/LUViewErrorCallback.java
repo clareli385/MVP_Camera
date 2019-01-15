@@ -1,8 +1,8 @@
 package com.example.clareli.mvp_video_record.View;
 
-public class ViewErrorCallback {
+public class LUViewErrorCallback {
     IViewErrorCallback _viewErrorCallback;
-    public ViewErrorCallback(IViewErrorCallback callback){
+    public LUViewErrorCallback(IViewErrorCallback callback){
         _viewErrorCallback = callback;
     }
     public void viewShowErrorDialog(String msg){

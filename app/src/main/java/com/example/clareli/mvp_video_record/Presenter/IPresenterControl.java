@@ -7,7 +7,6 @@ import com.example.clareli.mvp_video_record.View.IViewErrorCallback;
 public interface IPresenterControl {
     void videoPreviewStart(AutoFitTextureView textureView, IViewErrorCallback iViewErrorCallback);
     void closeCamera();
-    void startBackground();
     void videoRecordStart(String filePath);
     void videoRecordStop();
 }

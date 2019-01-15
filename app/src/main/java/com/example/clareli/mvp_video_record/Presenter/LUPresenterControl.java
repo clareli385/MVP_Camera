@@ -19,13 +19,13 @@ import com.example.clareli.mvp_video_record.MainActivity;
 import com.example.clareli.mvp_video_record.Model.LUEncodedVideo;
 import com.example.clareli.mvp_video_record.Model.IEncodedVideo;
 import com.example.clareli.mvp_video_record.Model.ICamera;
-import com.example.clareli.mvp_video_record.Model.CameraClass;
+import com.example.clareli.mvp_video_record.Model.LUCameraClass;
 import com.example.clareli.mvp_video_record.Model.IMuxer;
 import com.example.clareli.mvp_video_record.Model.LUMuxer;
-import com.example.clareli.mvp_video_record.Util.VideoCodecProfile;
+import com.example.clareli.mvp_video_record.Util.LUVideoCodecProfile;
 import com.example.clareli.mvp_video_record.View.AutoFitTextureView;
 import com.example.clareli.mvp_video_record.View.IViewErrorCallback;
-import com.example.clareli.mvp_video_record.View.ViewErrorCallback;
+import com.example.clareli.mvp_video_record.View.LUViewErrorCallback;
 
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
@@ -33,16 +33,16 @@ import java.nio.ByteBuffer;
 
 import static com.example.clareli.mvp_video_record.Util.IConstant.REQUEST_PERMISSION_CODE;
 import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_PERMISSIONS;
-import static com.example.clareli.mvp_video_record.Util.PermissionCheck.hasPermissionsGranted;
-import static com.example.clareli.mvp_video_record.Util.PermissionCheck.requestPermission;
+import static com.example.clareli.mvp_video_record.Util.LUPermissionCheck.hasPermissionsGranted;
+import static com.example.clareli.mvp_video_record.Util.LUPermissionCheck.requestPermission;
 
-public class PresenterControl implements IPresenterControl, IPresenterCallback {
+public class LUPresenterControl implements IPresenterControl, IPresenterCallback {
     private final WeakReference<Activity> _messageViewReference;
-    private String TAG = "PresenterControl";
-    private ICamera _iCamera;
-    private PresenterCameraCallback _presenterCallback;
+    private String TAG = "LUPresenterControl";
+    private ICamera _camera;
+    private LUPresenterCameraCallback _presenterCallback;
     private Object _systemService;
-    private ViewErrorCallback _viewErrorCallback;
+    private LUViewErrorCallback _LU_viewErrorCallback;
     private CameraDevice _cameraDevice;
     private AutoFitTextureView _textureView;
     private IEncodedVideo _cameraCodec;
@@ -50,15 +50,14 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
     private SurfaceTexture _previewSurTexture;
     private Surface _previewSurface;
     private String _dstFilePath;
-    private String _callbackErrorMsg;
 
 
     //constructor
-    public PresenterControl(Activity activity, ViewErrorCallback viewErrorCallback) {
+    public LUPresenterControl(Activity activity, LUViewErrorCallback LUViewErrorCallback) {
         _messageViewReference = new WeakReference<>(activity);
-        _presenterCallback = new PresenterCameraCallback(this);
-        _iCamera = new CameraClass(_messageViewReference.get(), _presenterCallback);
-        _viewErrorCallback = viewErrorCallback;
+        _presenterCallback = new LUPresenterCameraCallback(this);
+        _camera = new LUCameraClass(_presenterCallback);
+        _LU_viewErrorCallback = LUViewErrorCallback;
         _cameraCodec = new LUEncodedVideo(_presenterCallback);
 
     }
@@ -71,14 +70,10 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
     public void videoPreviewStart(AutoFitTextureView textureView, IViewErrorCallback iViewErrorCallback) {
         _textureView = textureView;
         if (textureView.isAvailable()) {
-            if (hasPermissionsGranted(_messageViewReference.get(), VIDEO_PERMISSIONS)) {
-                String cameraId = selectCamera();
-                CameraManager manager = (CameraManager) _systemService;
-                _iCamera.openCamera(textureView.getWidth(), textureView.getHeight(), cameraId, manager, textureView.getSurfaceTexture());
-            } else {
-                ((MainActivity) (_messageViewReference.get())).requestPermission();
-                return;
-            }
+            String cameraId = selectCamera();
+            CameraManager manager = (CameraManager) _systemService;
+            _camera.openCamera(textureView.getWidth(), textureView.getHeight(), cameraId, manager, textureView.getSurfaceTexture());
+
         } else {
             textureView.setSurfaceTextureListener(mSurfaceTextureListener);
         }
@@ -90,12 +85,13 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
      */
     public String selectCamera() {
         String cameraId = null;
+        long timeout = 2500;
         if (_systemService == null)
             _systemService = _messageViewReference.get().getSystemService(Context.CAMERA_SERVICE);
 
         CameraManager manager = (CameraManager) _systemService;
         try {
-            if (_iCamera.tryToGetAcquire()) {
+            if (_camera.tryToGetAcquire(timeout)) {
                 cameraId = manager.getCameraIdList()[0];
             }
         } catch (CameraAccessException e) {
@@ -106,32 +102,32 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
 
     @Override
     public void closeCamera() {
-        _iCamera.closeCamera();
-        _iCamera.stopBackgroundThread();
+        _camera.closeCamera();
+//        _camera.stopBackgroundThread();
     }
-
-    /*
-    start a background to do preview
-     */
-    @Override
-    public void startBackground() {
-        _iCamera.startBackgroundThread();
-    }
+//
+//    /*
+//    start a background to do preview
+//     */
+//    @Override
+//    public void startBackground() {
+//        _camera.startBackgroundThread();
+//    }
 
 
     /*  start to do video record
-        _iCamera.createCaptureSession(...) will pass preview , record surface to builder.addTarget() and set Codec Callback
+        _camera.createCaptureSession(...) will pass preview , record surface to builder.addTarget() and set Codec Callback
      */
     @Override
     public void videoRecordStart(String filePath) {
-        VideoCodecProfile videoCodecH264 = new VideoCodecProfile("video/avc", MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface,
+        LUVideoCodecProfile videoCodecH264 = new LUVideoCodecProfile("video/avc", MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface,
                 8880000, 30, 5, 1920, 1080);
-       //TODO check MJPEG setting
-        VideoCodecProfile videoCodecMJpeg = new VideoCodecProfile("video/mjpeg", MediaCodecInfo.CodecCapabilities.COLOR_FormatCbYCrY,
+        //TODO check MJPEG setting
+        LUVideoCodecProfile videoCodecMJpeg = new LUVideoCodecProfile("video/mjpeg", MediaCodecInfo.CodecCapabilities.COLOR_FormatCbYCrY,
                 6000000, 15, 10, 1920, 1080);
 
         if (_cameraDevice != null) {
-            _iCamera.closePreviewSession();
+            _camera.closePreviewSession();
             _previewSurTexture = _textureView.getSurfaceTexture();
             assert _previewSurTexture != null;
             _previewSurTexture.setDefaultBufferSize(_textureView.getWidth(), _textureView.getHeight());
@@ -139,7 +135,7 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
             _cameraCodec.configuredVideoCodec(videoCodecH264);
             _cameraCodec.startEncode();
             _previewSurface = new Surface(_previewSurTexture);
-            _iCamera.createCaptureSession(_previewSurface, _cameraCodec.getSurface(), filePath);
+            _camera.createCaptureSession(_previewSurface, _cameraCodec.getSurface());
 
         }
     }
@@ -151,7 +147,7 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
     public void videoRecordStop() {
         _cameraCodec.stopEncode();
         _muxerOutput.stopMuxer();
-        _iCamera.startPreview(_previewSurface);
+        _camera.startPreview(_previewSurface);
     }
 
     private TextureView.SurfaceTextureListener mSurfaceTextureListener = new TextureView.SurfaceTextureListener() {
@@ -161,7 +157,7 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
             if (hasPermissionsGranted(_messageViewReference.get(), VIDEO_PERMISSIONS)) {
                 String cameraId = selectCamera();
                 CameraManager manager = (CameraManager) _systemService;
-                _iCamera.openCamera(width, height, cameraId, manager, surface);
+                _camera.openCamera(width, height, cameraId, manager, surface);
             } else {
                 requestPermission((MainActivity) (_messageViewReference.get()), VIDEO_PERMISSIONS, REQUEST_PERMISSION_CODE);
                 return;
@@ -184,19 +180,10 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
         }
     };
 
-
-
     @Override
-    public void errorCameraCallback() {
-        _viewErrorCallback.viewShowErrorDialog("open Camera error");
+    public void errorCameraCallback(String msg) {
+        _LU_viewErrorCallback.viewShowErrorDialog(msg);
     }
-
-    @Override
-    public void errorCameraRecordCallback() {
-        _viewErrorCallback.viewShowErrorDialog("Camera record error");
-
-    }
-
 
     @Override
     public void errorDecoderCallback() {
@@ -226,8 +213,8 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
      */
     @Override
     public void onVideoOutputBufferAvailable(MediaCodec.BufferInfo info, ByteBuffer encodedData) {
-        Log.i(TAG,"info_presentationTimeUs:"+info.presentationTimeUs+", offset:"+info.offset);
-        if(_muxerOutput.writeSampleData(encodedData, info) == false) {
+        Log.i(TAG, "info_presentationTimeUs:" + info.presentationTimeUs + ", offset:" + info.offset);
+        if (_muxerOutput.writeSampleData(encodedData, info) == false) {
             //TODO show error dialog of _callbackErrorMsg
 
         }
@@ -236,13 +223,14 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
     @Override
     public void muxerErrorCallback(String msg) {
         Log.i(TAG, msg);
-        _callbackErrorMsg = msg;
+        _LU_viewErrorCallback.viewShowErrorDialog(msg);
     }
 
     @Override
     public void encodedErrorCallback(String msg) {
         Log.i(TAG, msg);
-        _callbackErrorMsg = msg;
+        _LU_viewErrorCallback.viewShowErrorDialog(msg);
+
     }
 
 }

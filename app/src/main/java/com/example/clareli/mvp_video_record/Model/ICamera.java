@@ -14,10 +14,8 @@ public interface ICamera {
     void startPreview(Surface previewSurface);
     void openCamera(int width, int height, String cameraID, CameraManager manager, SurfaceTexture surfaceTexture);
     void closeCamera();
-    void startBackgroundThread();
-    void stopBackgroundThread();
-    void createCaptureSession(Surface previewSurface, final Surface recordSurface, String filePath);
+    void createCaptureSession(Surface previewSurface, final Surface recordSurface);
     void closePreviewSession();
-    boolean tryToGetAcquire();
+    boolean tryToGetAcquire(long timeout);
 
 }

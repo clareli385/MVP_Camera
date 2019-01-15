@@ -11,10 +11,10 @@ import android.view.View;
 import android.widget.Button;
 
 import com.example.clareli.mvp_video_record.Presenter.IPresenterControl;
-import com.example.clareli.mvp_video_record.Presenter.PresenterControl;
+import com.example.clareli.mvp_video_record.Presenter.LUPresenterControl;
 import com.example.clareli.mvp_video_record.View.AutoFitTextureView;
 import com.example.clareli.mvp_video_record.View.IViewErrorCallback;
-import com.example.clareli.mvp_video_record.View.ViewErrorCallback;
+import com.example.clareli.mvp_video_record.View.LUViewErrorCallback;
 
 import java.io.File;
 
@@ -23,6 +23,7 @@ import static android.Manifest.permission.RECORD_AUDIO;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static com.example.clareli.mvp_video_record.Util.IConstant.REQUEST_PERMISSION_CODE;
 import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_PERMISSIONS;
+import static com.example.clareli.mvp_video_record.Util.LUPermissionCheck.hasPermissionsGranted;
 
 public class MainActivity extends AppCompatActivity implements IViewErrorCallback {
     private AutoFitTextureView _textureView;
@@ -34,7 +35,7 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     private String _filePath = null;
     private File _fileRecord = null;
     private boolean _isRecordingVideo = false;
-    private ViewErrorCallback _viewErrorCallback;
+    private LUViewErrorCallback _LU_viewErrorCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,8 +52,12 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     @Override
     protected void onResume() {
         super.onResume();
-        _iPresenterControl.startBackground();
-        _iPresenterControl.videoPreviewStart(_textureView, this);
+        if (hasPermissionsGranted(this, VIDEO_PERMISSIONS)) {
+//            _iPresenterControl.startBackground();
+            _iPresenterControl.videoPreviewStart(_textureView, this);
+        } else {
+            requestPermission();
+        }
 
     }
 
@@ -76,8 +81,8 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     }
 
     public void initPresenter() {
-        _viewErrorCallback = new ViewErrorCallback(this);
-        _iPresenterControl = new PresenterControl(this, _viewErrorCallback);
+        _LU_viewErrorCallback = new LUViewErrorCallback(this);
+        _iPresenterControl = new LUPresenterControl(this, _LU_viewErrorCallback);
 
     }
 

@@ -4,8 +4,8 @@ import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.view.Surface;
 
-import com.example.clareli.mvp_video_record.Presenter.PresenterCameraCallback;
-import com.example.clareli.mvp_video_record.Util.VideoCodecProfile;
+import com.example.clareli.mvp_video_record.Presenter.LUPresenterCameraCallback;
+import com.example.clareli.mvp_video_record.Util.LUVideoCodecProfile;
 
 
 import java.io.IOException;
@@ -14,18 +14,18 @@ import java.nio.ByteBuffer;
 public class LUEncodedVideo implements IEncodedVideo {
     private String TAG = "LUEncodedVideo";
 
-    private PresenterCameraCallback _presenterCallback;
+    private LUPresenterCameraCallback _presenterCallback;
 
     private MediaFormat _videoFormat;
     private MediaCodec _videoEncoder;
     private Surface _recordSurface;
 
-    public LUEncodedVideo(PresenterCameraCallback cameraCallback) {
+    public LUEncodedVideo(LUPresenterCameraCallback cameraCallback) {
         _presenterCallback = cameraCallback;
     }
 
     @Override
-    public void configuredVideoCodec(VideoCodecProfile videoCodec) {
+    public void configuredVideoCodec(LUVideoCodecProfile videoCodec) {
         try { // video/avc is H.264 encode
             _videoEncoder = MediaCodec.createEncoderByType(videoCodec.getEncodedVideoType());
             _videoFormat = MediaFormat.createVideoFormat(videoCodec.getEncodedVideoType(), videoCodec.getWidth(), videoCodec.getHeight());

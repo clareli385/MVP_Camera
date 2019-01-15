@@ -2,7 +2,7 @@ package com.example.clareli.mvp_video_record.Util;
 
 import android.media.MediaCodecInfo;
 
-public class VideoCodecProfile {
+public class LUVideoCodecProfile {
     String _encodedVideoType;
     int _colorFormat;
     int _videoBitrate;
@@ -10,7 +10,7 @@ public class VideoCodecProfile {
     int _iFrameInterval;
     int _width;
     int _height;
-    public VideoCodecProfile(String encodedVideoType, int colorFormat, int videoBitrate, int videoFramePerSecond, int iFrameInterval, int width, int height){
+    public LUVideoCodecProfile(String encodedVideoType, int colorFormat, int videoBitrate, int videoFramePerSecond, int iFrameInterval, int width, int height){
         _encodedVideoType = encodedVideoType;
         _colorFormat = colorFormat;
         _videoBitrate = videoBitrate;
@@ -50,7 +50,7 @@ public class VideoCodecProfile {
 
     @Override
     public String toString() {
-        return "VideoCodecProfile{" +
+        return "LUVideoCodecProfile{" +
                 "_encodedVideoType='" + _encodedVideoType + '\'' +
                 ", _colorFormat=" + _colorFormat +
                 ", _videoBitrate=" + _videoBitrate +

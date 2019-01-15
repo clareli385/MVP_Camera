@@ -5,7 +5,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.support.v4.app.ActivityCompat;
 
- public class PermissionCheck {
+ public class LUPermissionCheck {
      static public boolean hasPermissionsGranted(Context context, String[] permissions) {
         for (String permission : permissions) {
             if (ActivityCompat.checkSelfPermission(context, permission)

@@ -13,9 +13,7 @@ import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.util.Log;
 import android.view.Surface;
-import android.view.TextureView;
 
-import com.example.clareli.mvp_video_record.MainActivity;
 import com.example.clareli.mvp_video_record.Model.LUEncodedVideo;
 import com.example.clareli.mvp_video_record.Model.IEncodedVideo;
 import com.example.clareli.mvp_video_record.Model.ICamera;
@@ -23,18 +21,10 @@ import com.example.clareli.mvp_video_record.Model.LUCameraClass;
 import com.example.clareli.mvp_video_record.Model.IMuxer;
 import com.example.clareli.mvp_video_record.Model.LUMuxer;
 import com.example.clareli.mvp_video_record.Util.LUVideoCodecProfile;
-import com.example.clareli.mvp_video_record.View.AutoFitTextureView;
-import com.example.clareli.mvp_video_record.View.IViewErrorCallback;
 import com.example.clareli.mvp_video_record.View.LUViewErrorCallback;
 
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
-
-
-import static com.example.clareli.mvp_video_record.Util.IConstant.REQUEST_PERMISSION_CODE;
-import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_PERMISSIONS;
-import static com.example.clareli.mvp_video_record.Util.LUPermissionCheck.hasPermissionsGranted;
-import static com.example.clareli.mvp_video_record.Util.LUPermissionCheck.requestPermission;
 
 public class LUPresenterControl implements IPresenterControl, IPresenterCallback {
     private final WeakReference<Activity> _messageViewReference;
@@ -44,7 +34,6 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     private Object _systemService;
     private LUViewErrorCallback _LU_viewErrorCallback;
     private CameraDevice _cameraDevice;
-    private AutoFitTextureView _textureView;
     private IEncodedVideo _cameraCodec;
     private IMuxer _muxerOutput;
     private SurfaceTexture _previewSurTexture;
@@ -62,22 +51,12 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
 
     }
 
-    /*
-   textrure view will be started after mSurfaceTextureListener ->onSurfaceTextureAvailable
-   So finally we need to open camera for preview
-    */
+
     @Override
-    public void videoPreviewStart(AutoFitTextureView textureView, IViewErrorCallback iViewErrorCallback) {
-        _textureView = textureView;
-        if (textureView.isAvailable()) {
-            String cameraId = selectCamera();
-            CameraManager manager = (CameraManager) _systemService;
-            _camera.openCamera(textureView.getWidth(), textureView.getHeight(), cameraId, manager, textureView.getSurfaceTexture());
-
-        } else {
-            textureView.setSurfaceTextureListener(mSurfaceTextureListener);
-        }
-
+    public void openCamera(SurfaceTexture surface, int width, int height) {
+        String cameraId = selectCamera();
+        CameraManager manager = (CameraManager) _systemService;
+        _camera.openCamera(width, height, cameraId, manager, surface);
     }
 
     /*
@@ -103,23 +82,13 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     @Override
     public void closeCamera() {
         _camera.closeCamera();
-//        _camera.stopBackgroundThread();
     }
-//
-//    /*
-//    start a background to do preview
-//     */
-//    @Override
-//    public void startBackground() {
-//        _camera.startBackgroundThread();
-//    }
-
 
     /*  start to do video record
         _camera.createCaptureSession(...) will pass preview , record surface to builder.addTarget() and set Codec Callback
      */
     @Override
-    public void videoRecordStart(String filePath) {
+    public void videoRecordStart(String filePath, SurfaceTexture previewSurTexture, int width, int height) {
         LUVideoCodecProfile videoCodecH264 = new LUVideoCodecProfile("video/avc", MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface,
                 8880000, 30, 5, 1920, 1080);
         //TODO check MJPEG setting
@@ -128,9 +97,9 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
 
         if (_cameraDevice != null) {
             _camera.closePreviewSession();
-            _previewSurTexture = _textureView.getSurfaceTexture();
+            _previewSurTexture = previewSurTexture;
             assert _previewSurTexture != null;
-            _previewSurTexture.setDefaultBufferSize(_textureView.getWidth(), _textureView.getHeight());
+            _previewSurTexture.setDefaultBufferSize(width, height);
             _dstFilePath = filePath;
             _cameraCodec.configuredVideoCodec(videoCodecH264);
             _cameraCodec.startEncode();
@@ -150,35 +119,10 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
         _camera.startPreview(_previewSurface);
     }
 
-    private TextureView.SurfaceTextureListener mSurfaceTextureListener = new TextureView.SurfaceTextureListener() {
-
-        @Override
-        public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-            if (hasPermissionsGranted(_messageViewReference.get(), VIDEO_PERMISSIONS)) {
-                String cameraId = selectCamera();
-                CameraManager manager = (CameraManager) _systemService;
-                _camera.openCamera(width, height, cameraId, manager, surface);
-            } else {
-                requestPermission((MainActivity) (_messageViewReference.get()), VIDEO_PERMISSIONS, REQUEST_PERMISSION_CODE);
-                return;
-            }
-        }
-
-        @Override
-        public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-        }
-
-        @Override
-        public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-            _cameraCodec.stopEncode();
-            return true;
-        }
-
-        @Override
-        public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-
-        }
-    };
+    @Override
+    public void stopEncode() {
+        _cameraCodec.stopEncode();
+    }
 
     @Override
     public void errorCameraCallback(String msg) {

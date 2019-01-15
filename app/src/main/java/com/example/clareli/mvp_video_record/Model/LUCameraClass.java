@@ -35,7 +35,7 @@ public class LUCameraClass implements ICamera {
     private int _textureViewHeight = 0;
     private LUPresenterCameraCallback _presenterCallback;
     private SurfaceTexture _previewSurfaceTexture;
-    private CameraDevice.StateCallback mStateCallback;
+    private CameraDevice.StateCallback _stateCallback;
 
     public LUCameraClass(LUPresenterCameraCallback cameraCallback) {
         _presenterCallback = cameraCallback;
@@ -59,18 +59,9 @@ public class LUCameraClass implements ICamera {
             _presenterCallback.errorPreview("Start Preview Width Height error!");
         }
         _previewSurfaceTexture.setDefaultBufferSize(_textureViewWidth, _textureViewHeight);
-        try {
-            _previewBuilder = _cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            _previewBuilder.addTarget(previewSurface);
-            List<Surface> surfaces = new ArrayList<>();
-            surfaces.add(previewSurface);
-            createPreviewAndRecordCaptureSession(surfaces, false);
-
-        } catch (CameraAccessException e) {
-            _presenterCallback.errorPreview("Start Preview create Capture Settion error!");
-
-            e.printStackTrace();
-        }
+        List<Surface> surfaces = new ArrayList<>();
+        surfaces.add(previewSurface);
+        createPreviewAndRecordCaptureSession(surfaces, false);
     }
 
     @SuppressLint("MissingPermission")
@@ -87,7 +78,7 @@ public class LUCameraClass implements ICamera {
         setCameraDeviceStateCallback();
         try {
             _previewSurfaceTexture = surfaceTexture;
-            manager.openCamera(cameraId, mStateCallback, _backgroundHandler);
+            manager.openCamera(cameraId, _stateCallback, _backgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
             _presenterCallback.errorPreview("Open Camera error!");
@@ -180,7 +171,7 @@ public class LUCameraClass implements ICamera {
     }
 
     public void setCameraDeviceStateCallback() {
-        mStateCallback = new CameraDevice.StateCallback() {
+        _stateCallback = new CameraDevice.StateCallback() {
 
             @Override
             public void onOpened(@NonNull CameraDevice camera) {
@@ -220,18 +211,17 @@ public class LUCameraClass implements ICamera {
                         //for only preview
                         if(isRecord == false) {
                             // Auto focus should be continuous for camera preview.
+                            _previewBuilder = _cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                             _previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-                            //displaying the camera preview.
-                            _previewSession.setRepeatingRequest(_previewBuilder.build(),null, _backgroundHandler);
                         } else {
                             //for video record and preview
-                            CaptureRequest.Builder builder = _cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
-                            for(int index =0; index < surfacesList.size(); index++) {
-                                builder.addTarget(surfacesList.get(index));
-                            }
-                            _previewSession.setRepeatingRequest(builder.build(), null, _backgroundHandler);
-
+                            _previewBuilder = _cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
                         }
+                        for(int index = 0; index < surfacesList.size(); index++) {
+                            _previewBuilder.addTarget(surfacesList.get(index));
+                        }
+                        //displaying the camera preview.
+                        _previewSession.setRepeatingRequest(_previewBuilder.build(),null, _backgroundHandler);
 
                     } catch (CameraAccessException e) {
                         _presenterCallback.errorPreview("Set Repeating Request error!");

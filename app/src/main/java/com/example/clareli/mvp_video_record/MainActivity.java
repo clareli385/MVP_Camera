@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     private String TAG = "MainActivity";
     private Button _recordStartBtn;
     private IPresenterControl _iPresenterControl = null;
-    private static String _fileName = "mvp_mediacodec.mp4";
+    private static String _fileName = "mvp_mediacodec.mp4";//"mvp_video.mjpeg";
 
     private String _filePath = null;
     private File _fileRecord = null;

@@ -22,6 +22,7 @@ import com.example.clareli.mvp_video_record.Model.ICamera;
 import com.example.clareli.mvp_video_record.Model.CameraClass;
 import com.example.clareli.mvp_video_record.Model.IMuxer;
 import com.example.clareli.mvp_video_record.Model.LUMuxer;
+import com.example.clareli.mvp_video_record.Util.VideoCodecProfile;
 import com.example.clareli.mvp_video_record.View.AutoFitTextureView;
 import com.example.clareli.mvp_video_record.View.IViewErrorCallback;
 import com.example.clareli.mvp_video_record.View.ViewErrorCallback;
@@ -123,13 +124,11 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
      */
     @Override
     public void videoRecordStart(String filePath) {
-        String _encodedVideoType = "video/avc";
-        int colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
-        int videoBitrate = 8880000;
-        int videoFramePerSecond = 30;   //FPS
-        int iFrameInterval = 2;
-        int width = 1920;
-        int height= 1080;
+        VideoCodecProfile videoCodecH264 = new VideoCodecProfile("video/avc", MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface,
+                8880000, 30, 5, 1920, 1080);
+       //TODO check MJPEG setting
+        VideoCodecProfile videoCodecMJpeg = new VideoCodecProfile("video/mjpeg", MediaCodecInfo.CodecCapabilities.COLOR_FormatCbYCrY,
+                6000000, 15, 10, 1920, 1080);
 
         if (_cameraDevice != null) {
             _iCamera.closePreviewSession();
@@ -137,7 +136,7 @@ public class PresenterControl implements IPresenterControl, IPresenterCallback {
             assert _previewSurTexture != null;
             _previewSurTexture.setDefaultBufferSize(_textureView.getWidth(), _textureView.getHeight());
             _dstFilePath = filePath;
-            _cameraCodec.configuredVideoCodec(_encodedVideoType, colorFormat, videoBitrate, videoFramePerSecond, iFrameInterval, width, height);
+            _cameraCodec.configuredVideoCodec(videoCodecH264);
             _cameraCodec.startEncode();
             _previewSurface = new Surface(_previewSurTexture);
             _iCamera.createCaptureSession(_previewSurface, _cameraCodec.getSurface(), filePath);

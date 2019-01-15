@@ -2,8 +2,10 @@ package com.example.clareli.mvp_video_record.Model;
 
 import android.view.Surface;
 
+import com.example.clareli.mvp_video_record.Util.VideoCodecProfile;
+
 public interface IEncodedVideo {
-    void configuredVideoCodec(String encodedVideoType, int colorFormat, int videoBitrate, int videoFramePerSecond, int iFrameInterval, int width, int height);
+    void configuredVideoCodec(VideoCodecProfile videoCodec);
     Surface getSurface();
     void startEncode();
     void stopEncode();

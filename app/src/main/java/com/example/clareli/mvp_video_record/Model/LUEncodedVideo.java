@@ -5,6 +5,7 @@ import android.media.MediaFormat;
 import android.view.Surface;
 
 import com.example.clareli.mvp_video_record.Presenter.PresenterCameraCallback;
+import com.example.clareli.mvp_video_record.Util.VideoCodecProfile;
 
 
 import java.io.IOException;
@@ -24,16 +25,15 @@ public class LUEncodedVideo implements IEncodedVideo {
     }
 
     @Override
-    public void configuredVideoCodec(String encodedVideoType, int colorFormat, int videoBitrate, int videoFramePerSecond, int iFrameInterval, int width, int height) {
-
+    public void configuredVideoCodec(VideoCodecProfile videoCodec) {
         try { // video/avc is H.264 encode
-            _videoEncoder = MediaCodec.createEncoderByType(encodedVideoType);
-            _videoFormat = MediaFormat.createVideoFormat(encodedVideoType, width, height);
+            _videoEncoder = MediaCodec.createEncoderByType(videoCodec.getEncodedVideoType());
+            _videoFormat = MediaFormat.createVideoFormat(videoCodec.getEncodedVideoType(), videoCodec.getWidth(), videoCodec.getHeight());
+            _videoFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, videoCodec.getColorFormat());
+            _videoFormat.setInteger(MediaFormat.KEY_BIT_RATE, videoCodec.getVideoBitrate());
+            _videoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, videoCodec.getVideoFramePerSecond());
+            _videoFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, videoCodec.getIFrameInterval());
 
-            _videoFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
-            _videoFormat.setInteger(MediaFormat.KEY_BIT_RATE, videoBitrate);
-            _videoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, videoFramePerSecond);
-            _videoFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, iFrameInterval);
             _videoEncoder.configure(_videoFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
             _recordSurface = _videoEncoder.createInputSurface();
             setCodecCallback();

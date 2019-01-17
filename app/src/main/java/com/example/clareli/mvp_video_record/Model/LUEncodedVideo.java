@@ -4,7 +4,7 @@ import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.view.Surface;
 
-import com.example.clareli.mvp_video_record.Presenter.LUPresenterCameraCallback;
+import com.example.clareli.mvp_video_record.Presenter.LUPresenterCallback;
 import com.example.clareli.mvp_video_record.Util.LUVideoCodecProfile;
 
 
@@ -14,13 +14,13 @@ import java.nio.ByteBuffer;
 public class LUEncodedVideo implements IEncodedVideo {
     private String TAG = "LUEncodedVideo";
 
-    private LUPresenterCameraCallback _presenterCallback;
+    private LUPresenterCallback _presenterCallback;
 
     private MediaFormat _videoFormat;
     private MediaCodec _videoEncoder;
     private Surface _recordSurface;
 
-    public LUEncodedVideo(LUPresenterCameraCallback cameraCallback) {
+    public LUEncodedVideo(LUPresenterCallback cameraCallback) {
         _presenterCallback = cameraCallback;
     }
 
@@ -39,7 +39,7 @@ public class LUEncodedVideo implements IEncodedVideo {
             setCodecCallback();
 
         } catch (IOException e) {
-            _presenterCallback.getEncodedErrorMsg("configured Video Codec error!");
+            _presenterCallback.getVideoEncodedErrorMsg("configured Video Codec error!");
             e.printStackTrace();
         }
 
@@ -71,7 +71,7 @@ public class LUEncodedVideo implements IEncodedVideo {
 
             @Override
             public void onError(MediaCodec codec, MediaCodec.CodecException e) {
-                _presenterCallback.getEncodedErrorMsg("Set Codec Callback error!");
+                _presenterCallback.getVideoEncodedErrorMsg("Set Codec Callback error!");
 
             }
 
@@ -88,7 +88,7 @@ public class LUEncodedVideo implements IEncodedVideo {
         if (_videoEncoder != null) {
             _videoEncoder.start();
         } else {
-            _presenterCallback.getEncodedErrorMsg("Start Encoded error!");
+            _presenterCallback.getVideoEncodedErrorMsg("Start Encoded error!");
         }
     }
 
@@ -101,7 +101,7 @@ public class LUEncodedVideo implements IEncodedVideo {
             _videoEncoder = null;
         } catch (Exception e) {
             _videoEncoder = null;
-            _presenterCallback.getEncodedErrorMsg("Stop Encoded error!");
+            _presenterCallback.getVideoEncodedErrorMsg("Stop Encoded error!");
             e.printStackTrace();
         }
     }

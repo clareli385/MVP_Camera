@@ -15,7 +15,7 @@ import android.os.HandlerThread;
 import android.view.Surface;
 import android.support.annotation.NonNull;
 
-import com.example.clareli.mvp_video_record.Presenter.LUPresenterCameraCallback;
+import com.example.clareli.mvp_video_record.Presenter.LUPresenterCallback;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,11 +33,11 @@ public class LUCameraClass implements ICamera {
 
     private int _textureViewWidth = 0;
     private int _textureViewHeight = 0;
-    private LUPresenterCameraCallback _presenterCallback;
+    private LUPresenterCallback _presenterCallback;
     private SurfaceTexture _previewSurfaceTexture;
     private CameraDevice.StateCallback _stateCallback;
 
-    public LUCameraClass(LUPresenterCameraCallback cameraCallback) {
+    public LUCameraClass(LUPresenterCallback cameraCallback) {
         _presenterCallback = cameraCallback;
     }
 

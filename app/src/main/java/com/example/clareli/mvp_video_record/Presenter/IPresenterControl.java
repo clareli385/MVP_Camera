@@ -11,5 +11,7 @@ public interface IPresenterControl {
     void closeCamera();
     void videoRecordStart(String filePath, SurfaceTexture previewSurTexture, int width, int height);
     void videoRecordStop();
-    void stopEncode();
+    void stopVideoEncode();
+    void audioRecordStart(String filePath);
+    void audioRecordStop();
 }

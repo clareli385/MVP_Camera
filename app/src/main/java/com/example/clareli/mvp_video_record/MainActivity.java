@@ -24,23 +24,22 @@ import static android.Manifest.permission.CAMERA;
 import static android.Manifest.permission.RECORD_AUDIO;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static com.example.clareli.mvp_video_record.Util.IConstant.REQUEST_PERMISSION_CODE;
-import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_PERMISSIONS;
+import static com.example.clareli.mvp_video_record.Util.IConstant.RECORD_PERMISSIONS;
 import static com.example.clareli.mvp_video_record.Util.LUPermissionCheck.hasPermissionsGranted;
-import static com.example.clareli.mvp_video_record.Util.LUPermissionCheck.requestPermission;
 
 public class MainActivity extends AppCompatActivity implements IViewErrorCallback {
     private AutoFitTextureView _textureView;
     private String TAG = "MainActivity";
     private Button _recordStartBtn;
-    private IPresenterControl _iPresenterControl = null;
+    private IPresenterControl _presenterControl = null;
     private static String _fileName = "mvp_mediacodec.mp4";//"mvp_video.mjpeg";
 
     private String _filePath = null;
     private File _fileRecord = null;
     private boolean _isRecordingVideo = false;
-    private LUViewErrorCallback _LU_viewErrorCallback;
+    private LUViewErrorCallback _viewErrorCallback;
     private TextureView.SurfaceTextureListener _surfaceTextureListener;
-    private View.OnClickListener recordClickListener;
+    private View.OnClickListener _recordClickListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,10 +54,10 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     @Override
     protected void onResume() {
         super.onResume();
-        if (hasPermissionsGranted(this, VIDEO_PERMISSIONS)) {
+        if (hasPermissionsGranted(this, RECORD_PERMISSIONS)) {
 
             if (_textureView.isAvailable()) {
-                _iPresenterControl.openCamera(_textureView.getSurfaceTexture(), _textureView.getWidth(), _textureView.getHeight());
+                _presenterControl.openCamera(_textureView.getSurfaceTexture(), _textureView.getWidth(), _textureView.getHeight());
             } else {
                 _textureView.setSurfaceTextureListener(_surfaceTextureListener);
             }
@@ -70,8 +69,8 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
 
     @Override
     protected void onPause() {
-        if (_iPresenterControl != null)
-            _iPresenterControl.closeCamera();
+        if (_presenterControl != null)
+            _presenterControl.closeCamera();
         super.onPause();
 
     }
@@ -80,7 +79,7 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
         _textureView = findViewById(R.id.texture);
         _recordStartBtn = findViewById(R.id.record_btn);
         setupButtonClickListener();
-        _recordStartBtn.setOnClickListener(recordClickListener);
+        _recordStartBtn.setOnClickListener(_recordClickListener);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
             //save to internal storage D
             _filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath();
@@ -89,14 +88,14 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     }
 
     public void initPresenter() {
-        _LU_viewErrorCallback = new LUViewErrorCallback(this);
-        _iPresenterControl = new LUPresenterControl(this, _LU_viewErrorCallback);
-        //it needs presenter object, so after initialize _iPresenterControl
+        _viewErrorCallback = new LUViewErrorCallback(this);
+        _presenterControl = new LUPresenterControl(this, _viewErrorCallback);
+        //it needs presenter object, so after initialize _presenterControl
         setupSurfaceTextureListener();
     }
 
     public void setupButtonClickListener(){
-        recordClickListener = new View.OnClickListener() {
+        _recordClickListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 switch (v.getId()) {
@@ -104,12 +103,13 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
                         if (_isRecordingVideo == false) {
                             _isRecordingVideo = true;
                             _recordStartBtn.setText("Stop");
-                            _iPresenterControl.videoRecordStart(_fileRecord.getAbsolutePath(), _textureView.getSurfaceTexture(), _textureView.getWidth(), _textureView.getHeight());
-
+                            _presenterControl.videoRecordStart(_fileRecord.getAbsolutePath(), _textureView.getSurfaceTexture(), _textureView.getWidth(), _textureView.getHeight());
+                            _presenterControl.audioRecordStart(_fileRecord.getAbsolutePath());
                         } else {
                             _isRecordingVideo = false;
                             _recordStartBtn.setText("Record");
-                            _iPresenterControl.videoRecordStop();
+                            _presenterControl.videoRecordStop();
+                            _presenterControl.audioRecordStop();
                         }
                         break;
                 }
@@ -122,8 +122,8 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
 
             @Override
             public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-                if (hasPermissionsGranted(MainActivity.this, VIDEO_PERMISSIONS)) {
-                    _iPresenterControl.openCamera(surface, width, height);
+                if (hasPermissionsGranted(MainActivity.this, RECORD_PERMISSIONS)) {
+                    _presenterControl.openCamera(surface, width, height);
 
                 } else {
                     requestPermission();
@@ -137,7 +137,7 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
 
             @Override
             public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-                _iPresenterControl.stopEncode();
+                _presenterControl.stopVideoEncode();
                 return true;
             }
 
@@ -159,7 +159,7 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         if (requestCode == REQUEST_PERMISSION_CODE) {
-            if (grantResults.length == VIDEO_PERMISSIONS.length) {
+            if (grantResults.length == RECORD_PERMISSIONS.length) {
                 for (int result : grantResults) {
                     if (result != PackageManager.PERMISSION_GRANTED) {
                         break;
@@ -178,6 +178,6 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
 
     @Override
     public void showErrorMsg(String msg) {
-        Log.i(TAG, "error:" + msg);
+        Log.i(TAG, "!!!error:" + msg);
     }
 }

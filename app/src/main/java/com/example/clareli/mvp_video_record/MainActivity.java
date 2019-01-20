@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     private String TAG = "MainActivity";
     private Button _recordStartBtn;
     private IPresenterControl _presenterControl = null;
-    private static String _fileName = "mvp_mediacodec.mp4";//"mvp_video.mjpeg";
+    private static String _fileName = "mvp_mediacodec.mp4";//"mvp_mediacodec.aac";
 
     private String _filePath = null;
     private File _fileRecord = null;
@@ -83,6 +83,8 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
             //save to internal storage D
             _filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath();
+//            _filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC).getAbsolutePath();
+
             _fileRecord = new File(_filePath, _fileName);
         }
     }

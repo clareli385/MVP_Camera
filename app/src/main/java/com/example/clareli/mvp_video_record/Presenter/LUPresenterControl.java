@@ -29,6 +29,7 @@ import com.example.clareli.mvp_video_record.View.LUViewErrorCallback;
 
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
+import java.util.Date;
 
 public class LUPresenterControl implements IPresenterControl, IPresenterCallback {
     private final WeakReference<Activity> _messageViewReference;
@@ -39,8 +40,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     private LUViewErrorCallback _LU_viewErrorCallback;
     private CameraDevice _cameraDevice;
     private IEncodedVideo _cameraCodec;
-    private IMuxer _videoMuxer;
-//    private IMuxer _audioMuxer;
+    private IMuxer _muxer;
     private SurfaceTexture _previewSurTexture;
     private Surface _previewSurface;
     private String _dstFilePath;
@@ -48,11 +48,9 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     private LUEncodedAudio _encodedAudio;
     private ByteBuffer _inputAudioBuffer;
     private AudioSamples audioSamples;
-    private long _inputBufferPosition;
-    private float _audioRate;
     private MediaFormat _videoFormat;
     private MediaFormat _audioFormat;
-
+    private long prevOutputPTSUs = 0;
 
     //constructor
     public LUPresenterControl(Activity activity, LUViewErrorCallback LUViewErrorCallback) {
@@ -108,12 +106,11 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
         //TODO check MJPEG setting
         LUVideoCodecProfile videoCodecMJpeg = new LUVideoCodecProfile("video/mjpeg", MediaCodecInfo.CodecCapabilities.COLOR_FormatCbYCrY,
                 6000000, 15, 10, 1920, 1080);
-
+        //TODO modify preview result not callback _cameraDevice
         if (_cameraDevice != null) {
             _camera.closePreviewSession();
             _previewSurTexture = previewSurTexture;
             if (_previewSurTexture == null) {
-                //TODO
                 _LU_viewErrorCallback.viewShowErrorDialog("preview SurTexture is null fail!");
                 return;
             }
@@ -128,10 +125,9 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     }
 
     public void stopMuxer() {
-        _videoMuxer.stopMuxer();
-        _videoMuxer = null;
-//        _audioMuxer.stopMuxer();
-//        _audioMuxer = null;
+        _muxer.stopMuxer();
+        _muxer = null;
+
     }
 
     /*
@@ -154,39 +150,29 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     }
 
     public void setupAudioRecord() {
-        int audioFrequency = 4100;
+        int audioFrequency = 44100;
         int channelConfig = AudioFormat.CHANNEL_IN_STEREO;
         int encodingBit = AudioFormat.ENCODING_PCM_16BIT;
-        int bitPerSample = 8;
         LUAudioCodecProfile audioCodecProfileAAC = new LUAudioCodecProfile(MediaFormat.MIMETYPE_AUDIO_AAC,
-                16000, 1, 128 * 100, MediaCodecInfo.CodecProfileLevel.AACObjectLC,
-                16 * 10240);
+                44100, 2, 128 * 1024, MediaCodecInfo.CodecProfileLevel.AACObjectLC,
+                //16 * 10240);
+                65536);
         if (encodingBit == AudioFormat.ENCODING_PCM_16BIT)
-            bitPerSample = 16;
-        calculateInputRate(bitPerSample, 16000, 1);
 
         if (_encodedAudio != null) {
-            if (_recordedAudio != null)
+            if (_recordedAudio != null) {
                 _recordedAudio.startRecord(audioFrequency, channelConfig, encodingBit);
+                _encodedAudio.configuredAudioCodec(audioCodecProfileAAC);
+                if (_encodedAudio.getCodec() != null) {
+                    prevOutputPTSUs = System.currentTimeMillis() * 1000;
+                    _encodedAudio.startEncode();
+                }
+            }
             else {
                 _LU_viewErrorCallback.viewShowErrorDialog("audio Record Start fail!");
 
             }
-            _encodedAudio.configuredAudioCodec(audioCodecProfileAAC);
-            if (_encodedAudio.getCodec() != null) {
-                _encodedAudio.startEncode();
 
-                _audioFormat = _encodedAudio.getFormat();
-                //must wait video and audio format done, then start muxer
-
-//                int saveOutputFormat = MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4;
-//                if (_audioMuxer == null) {
-//                    _audioMuxer = new LUMuxer(_dstFilePath, saveOutputFormat, _presenterCallback);
-//                }
-//                _audioMuxer.setMuxerMediaFormat(_audioFormat);
-//                _audioMuxer.startMuxer();
-
-            }
         } else {
             _LU_viewErrorCallback.viewShowErrorDialog("audio Record encoded fail!");
         }
@@ -205,12 +191,6 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     }
 
     @Override
-    public void errorDecoderCallback() {
-
-    }
-
-
-    @Override
     public void getCameraDevice(CameraDevice mCameraDevice) {
         _cameraDevice = mCameraDevice;
     }
@@ -224,15 +204,16 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
         //the format include "csd-0" and "csd-1" byte buffers
         Log.i(TAG, "onVideoOutputFormatChanged....");
         //setup video muxer
-        _videoFormat = format;
         int saveOutputFormat = MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4;
-        if (_videoMuxer == null) {
-            _videoMuxer = new LUMuxer(_dstFilePath, saveOutputFormat, _presenterCallback);
+        _videoFormat = format;
+        //start audio record and codec
+//        setupAudioRecord();
+        if (_muxer == null) {
+            _muxer = new LUMuxer(_dstFilePath, saveOutputFormat, _presenterCallback);
         }
-        _videoMuxer.setMuxerMediaFormat(format);
-        _videoMuxer.startMuxer();
-
-        setupAudioRecord();
+        _muxer.setMuxerMediaFormat(_videoFormat);
+//        _muxer.setMuxerMediaFormat(format);
+        _muxer.startMuxer();
     }
 
     /*from LUEncodedVideo.java
@@ -241,8 +222,8 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     @Override
     public void onVideoOutputBufferAvailable(MediaCodec.BufferInfo info, ByteBuffer encodedData) {
         Log.i(TAG, "info_presentationTimeUs:" + info.presentationTimeUs + ", offset:" + info.offset);
-        if(_videoMuxer != null) {
-            if (_videoMuxer.writeSampleData(encodedData, info) == false) {
+        if(_muxer != null) {
+            if (_muxer.writeSampleData(encodedData, info) == false) {
 
             }
         }
@@ -275,15 +256,24 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     }
 
     @Override
-    public void notifyToAccessBuffer(byte[] rowData) {
+    public void notifyToAccessBuffer(byte[] rowData, int readBytes) {
         audioSamples = new AudioSamples();
         audioSamples.bytes = rowData;
+        audioSamples.readBytes = readBytes;
         Log.i(TAG, "----Audio Record data:" + rowData.length);
     }
 
     @Override
     public void onAudioOutputFormatChanged(MediaFormat format) {
         Log.i(TAG, "********onAudioOutputFormatChanged");
+        int saveOutputFormat = MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4;
+//        if (_muxer == null) {
+//            _muxer = new LUMuxer(_dstFilePath, saveOutputFormat, _presenterCallback);
+//        }
+//        _muxer.setMuxerMediaFormat(_videoFormat);
+////        _muxer.setMuxerMediaFormat(format);
+//        _muxer.startMuxer();
+
 
     }
 
@@ -291,13 +281,17 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     public void onAudioOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info, ByteBuffer encodedData) {
         Log.i(TAG, "..onAudioOutputBufferAvailable_encodedData:" + encodedData.limit());
         if (encodedData != null) {
-//            if (_audioMuxer != null) {
-//                if (_audioMuxer.writeSampleData(encodedData, info) == false) {
+            if (_muxer != null) {
+//                if (_muxer.writeSampleData(encodedData, info) == false) {
 //                    _LU_viewErrorCallback.viewShowErrorDialog("Audio output write to Muxer error!");
 //
 //                }
-//            } else
-//                _LU_viewErrorCallback.viewShowErrorDialog("Audio record muxer write data fail!");
+            } else {
+                _LU_viewErrorCallback.viewShowErrorDialog("Audio record muxer write data fail!");
+            }
+//            if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0){
+//                _muxer.stopMuxer();
+//            }
         }
 
     }
@@ -306,35 +300,30 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     public void onAudioInputBufferAvailable(ByteBuffer inputBuffer, int index) {
         if (audioSamples != null) {
             _inputAudioBuffer = inputBuffer;
-            int sz = Math.min(inputBuffer.capacity(), audioSamples.bytes.length - audioSamples.offset);
-            long ts = getPresentationTimestampUs(_inputBufferPosition);
+            long presentationTimeUs = getPTSUs();
+            if(audioSamples != null)
+                    inputBuffer.put(audioSamples.bytes);
 
-            inputBuffer.put(audioSamples.bytes, audioSamples.offset, sz);
-            _encodedAudio.queueInputBuffer(index, sz, ts);
-            _inputBufferPosition += sz;
-            audioSamples.offset += sz;
-            Log.i(TAG, "....Presenter__onAudioInputBufferAvailable__inputBuffer size:" + _inputAudioBuffer.limit());
+                if(audioSamples.readBytes <= 0) {
+                    _encodedAudio.queueInputBuffer(index, 0, 0,
+                            presentationTimeUs, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                } else {
+                    _encodedAudio.queueInputBuffer(index, 0, audioSamples.readBytes,
+                            presentationTimeUs, 0);
+                }
+
         }
     }
 
     private class AudioSamples {
         byte bytes[];
         int offset;
+        int readBytes;
     }
 
-    private void calculateInputRate(int bitPerSample, int sampleRate, int channelCount) {
-        _audioRate = bitPerSample;
-        _audioRate *= sampleRate;
-        _audioRate *= channelCount;
-        _audioRate *= 1e-6; // -> us
-        _audioRate /= 8; // -> bytes
-
-        Log.v(TAG, "Rate: " + _audioRate);
-    }
-
-
-    private long getPresentationTimestampUs(long position) {
-        return (long) (position / _audioRate);
+    protected long getPTSUs() {
+        long pts = new Date().getTime() * 1000 - prevOutputPTSUs;
+        return pts;
     }
 
 }

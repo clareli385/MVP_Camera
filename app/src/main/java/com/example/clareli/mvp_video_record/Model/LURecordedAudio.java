@@ -58,9 +58,9 @@ public class LURecordedAudio implements IRecordedAudio {
 
 
     @Override
-    public void setCallback(byte[] rowData) {
+    public void setCallback(byte[] rowData, int readBytes) {
         Log.d(TAG, "====row Data size:"+rowData.length);
-        _presenterCallback.accessAudioRecordBuffer(rowData);
+        _presenterCallback.accessAudioRecordBuffer(rowData, readBytes);
     }
 
     private class RecordingRunnable implements Runnable{
@@ -74,7 +74,7 @@ public class LURecordedAudio implements IRecordedAudio {
                 if (result < 0) {
                     _presenterCallback.getAudioRecordErrorMsg(getBufferReadFailureReason(result));
                 }
-                setCallback(byteArray);
+                setCallback(byteArray, result);
             }
             byteArray = null;
         }

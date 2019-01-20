@@ -11,5 +11,6 @@ public interface IEncodedAudio {
     void stopEncode();
     MediaCodec getCodec();
     MediaFormat getFormat();
-    void queueInputBuffer(int bufferIndex, int sz, long ts);
+    void queueInputBuffer(int index, int offset, int size, long presentationTimeUs, int flags);
+    int dequeInputBuffer(int timeout);
 }

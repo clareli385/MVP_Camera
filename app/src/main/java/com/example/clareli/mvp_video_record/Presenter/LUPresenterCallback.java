@@ -20,11 +20,6 @@ public class LUPresenterCallback {
     }
 
 
-    public void errorFromDecoder(){
-        _cameraCallback.errorDecoderCallback();
-    }
-
-
     public void getVideoOutputFormatChanged(MediaFormat format){
         _cameraCallback.onVideoOutputFormatChanged(format);
     }
@@ -45,8 +40,8 @@ public class LUPresenterCallback {
         _cameraCallback.encodedAudioErrorCallback(msg);
     }
 
-    public void accessAudioRecordBuffer(byte[] rowData){
-        _cameraCallback.notifyToAccessBuffer(rowData);
+    public void accessAudioRecordBuffer(byte[] rowData, int readBytes){
+        _cameraCallback.notifyToAccessBuffer(rowData, readBytes);
     }
 
     public void getAudioOutputFormatChanged(MediaFormat format){

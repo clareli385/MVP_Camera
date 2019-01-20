@@ -188,6 +188,7 @@ public class LUCameraClass implements ICamera {
                 _cameraOpenCloseLock.release();
                 camera.close();
                 _cameraDevice = null;
+                //TODO add callback to presenter to notify camera closed
             }
 
             @Override
@@ -212,6 +213,7 @@ public class LUCameraClass implements ICamera {
                         if(isRecord == false) {
                             // Auto focus should be continuous for camera preview.
                             _previewBuilder = _cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                            //TODO modify to keep settings
                             _previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
                         } else {
                             //for video record and preview

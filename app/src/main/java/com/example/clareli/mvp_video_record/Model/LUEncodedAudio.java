@@ -64,6 +64,7 @@ public class LUEncodedAudio implements IEncodedAudio {
             @Override
             public void onInputBufferAvailable(MediaCodec codec, int index) {
                 ByteBuffer inputBuffer = codec.getInputBuffer(index);
+                inputBuffer.clear();
                 Log.d(TAG,"onInputBufferAvailable__inputBuffer:"+inputBuffer.limit());
                 _presenterCallback.getAudioInputBufferAvailable(inputBuffer, index);
             }
@@ -73,6 +74,9 @@ public class LUEncodedAudio implements IEncodedAudio {
                 ByteBuffer outputBuffer = codec.getOutputBuffer(index);
                 Log.d(TAG,"onOutputBufferAvailable__outputBuffer:"+outputBuffer.limit());
                 _presenterCallback.getAudioOutputBufferAvailable(codec, index, info, outputBuffer);
+
+                codec.releaseOutputBuffer(index, false);
+
             }
 
             @Override
@@ -101,8 +105,13 @@ public class LUEncodedAudio implements IEncodedAudio {
     }
 
     @Override
-    public void queueInputBuffer(int bufferIndex, int sz, long ts) {
-        _audioCodec.queueInputBuffer(bufferIndex, 0, sz, ts, 0);
+    public void queueInputBuffer(int index, int offset, int size, long presentationTimeUs, int flags) {
+        _audioCodec.queueInputBuffer(index, offset, size, presentationTimeUs, flags);
+    }
+
+    @Override
+    public int dequeInputBuffer(int timeout) {
+        return _audioCodec.dequeueInputBuffer(timeout);
     }
 
 }

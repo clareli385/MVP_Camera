@@ -8,7 +8,7 @@ import java.nio.ByteBuffer;
 
 public interface IMuxer {
     void setMuxerMediaFormat(MediaFormat mediaFormat);
-    boolean writeSampleData(ByteBuffer encodedData, MediaCodec.BufferInfo info);
-    void startMuxer();
+    boolean writeSampleData(ByteBuffer encodedData, MediaCodec.BufferInfo info, int flag);
+    boolean isMuxerStarted();
     boolean stopMuxer();
 }

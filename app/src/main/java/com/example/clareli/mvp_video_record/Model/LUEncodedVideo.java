@@ -20,6 +20,7 @@ public class LUEncodedVideo implements IEncodedVideo {
     private MediaCodec _videoEncoder;
     private Surface _recordSurface;
 
+
     public LUEncodedVideo(LUPresenterCallback cameraCallback) {
         _presenterCallback = cameraCallback;
     }
@@ -50,7 +51,8 @@ public class LUEncodedVideo implements IEncodedVideo {
         return _recordSurface;
     }
 
-    /*_cameraCodec setCodecCallback will be called by android system and feedback result to
+    /*2019-01-20, clare
+    _cameraCodec setCodecCallback will be called by android system and feedback result to
     onVideoOutputFormatChanged() and onVideoOutputBufferAvailable()
      */
     private void setCodecCallback() {

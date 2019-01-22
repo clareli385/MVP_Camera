@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     private String TAG = "MainActivity";
     private Button _recordStartBtn;
     private IPresenterControl _presenterControl = null;
-    private static String _fileName = "mvp_mediacodec.mp4";//"mvp_mediacodec.aac";
+    private static String _fileName = "mvp_mediacodec.mp4";
 
     private String _filePath = null;
     private File _fileRecord = null;
@@ -83,7 +83,6 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
             //save to internal storage D
             _filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath();
-//            _filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC).getAbsolutePath();
 
             _fileRecord = new File(_filePath, _fileName);
         }
@@ -92,7 +91,8 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     public void initPresenter() {
         _viewErrorCallback = new LUViewErrorCallback(this);
         _presenterControl = new LUPresenterControl(this, _viewErrorCallback);
-        //it needs presenter object, so after initialize _presenterControl
+        //2019-01-20,Clare
+        // it needs presenter object, so after initialize _presenterControl
         setupSurfaceTextureListener();
     }
 
@@ -105,13 +105,12 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
                         if (_isRecordingVideo == false) {
                             _isRecordingVideo = true;
                             _recordStartBtn.setText("Stop");
-                            _presenterControl.videoRecordStart(_fileRecord.getAbsolutePath(), _textureView.getSurfaceTexture(), _textureView.getWidth(), _textureView.getHeight());
-                            _presenterControl.audioRecordStart(_fileRecord.getAbsolutePath());
+                            _presenterControl.startRecord(_fileRecord.getAbsolutePath(), _textureView.getSurfaceTexture(), _textureView.getWidth(), _textureView.getHeight());
                         } else {
                             _isRecordingVideo = false;
                             _recordStartBtn.setText("Record");
-                            _presenterControl.videoRecordStop();
-                            _presenterControl.audioRecordStop();
+                            _presenterControl.stopRecord();
+                            _presenterControl.stopMuxer();
                         }
                         break;
                 }
@@ -140,6 +139,7 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
             @Override
             public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
                 _presenterControl.stopVideoEncode();
+//                _presenterControl.stopMuxer();
                 return true;
             }
 

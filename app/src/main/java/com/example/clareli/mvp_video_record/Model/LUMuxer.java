@@ -19,9 +19,11 @@ public class LUMuxer implements IMuxer {
     private String _mime;
     private LUPresenterCallback _presenterCallback;
     private Semaphore _muxerWriteCloseLock = new Semaphore(1);
+    private boolean hasVideoSetted = false;
+    private boolean hasAudioSetted = false;
 
 
-    public LUMuxer(String dstPath, int outputFormat, LUPresenterCallback presenterCallback){
+    public LUMuxer(String dstPath, int outputFormat, LUPresenterCallback presenterCallback) {
         try {
             _muxer = new MediaMuxer(dstPath, outputFormat);
             _presenterCallback = presenterCallback;
@@ -37,80 +39,59 @@ public class LUMuxer implements IMuxer {
         //write Video format file
         if (_mime.startsWith("video/")) {
             videoTrackIndex = _muxer.addTrack(mediaFormat);
-            Log.i("LUMuxer", "videoTrackIndex:"+videoTrackIndex);
+            hasVideoSetted = true;
         }
-        if(_mime.startsWith("audio/")){
+        if (_mime.startsWith("audio/")) {
             //write Audio format file
             audioTrackIndex = _muxer.addTrack(mediaFormat);
-            Log.i("LUMuxer", "audioTrackIndex:"+audioTrackIndex);
-
+           // hasAudioSetted = true;
         }
 
+        if (hasVideoSetted) {
+//            Log.i("LUMuxer", "muxer start!!!");
+            startMuxer();
+        }
 
     }
 
+
     @Override
-    public boolean writeSampleData(ByteBuffer encodedData, MediaCodec.BufferInfo info) {
-
-        if((info != null) && (_muxer != null)) {
-            if (_mime.startsWith("video/")){
-                currentTrackIndex = videoTrackIndex;
-            } else if(_mime.startsWith("audio/")) {
-                currentTrackIndex = audioTrackIndex;
-            }
-            if(currentTrackIndex < 0){
-                _presenterCallback.getMuxerErrorMsg("1.Write Muxer Sample Data error!");
-                return false;
-            }
-            if((encodedData == null) || (info == null)){
-                _presenterCallback.getMuxerErrorMsg("2.Write Muxer Sample Data error!");
-                return false;
-            }
-            Log.i("LUMuxer","muxer prepare to write...");
-            try {
-                _muxerWriteCloseLock.acquire();
-                _muxer.writeSampleData(currentTrackIndex, encodedData, info);
-                Log.i("LUMuxer","muxer write ok");
-
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } finally {
-                _muxerWriteCloseLock.release();
-            }
-
-            return true;
-        } else {
-            _presenterCallback.getMuxerErrorMsg("3.Write Muxer Sample Data error!");
-            return false;
+    public boolean writeSampleData(ByteBuffer encodedData, MediaCodec.BufferInfo info, int flag) {
+        if (flag == 1) {
+            currentTrackIndex = videoTrackIndex;
+        } else if (flag == 2) {
+            currentTrackIndex = audioTrackIndex;
         }
+        Log.d("samson", String.valueOf(currentTrackIndex));
+        _muxer.writeSampleData(currentTrackIndex, encodedData, info);
+        return true;
     }
 
-    @Override
-    public void startMuxer() {
+        @Override
+    public boolean isMuxerStarted() {
+        return ( hasVideoSetted);
+    }
+
+    private void startMuxer() {
         _muxer.start();
     }
 
     @Override
     public boolean stopMuxer() {
-        if(_muxer != null) {
-            try {
-                _muxerWriteCloseLock.acquire();
+        if (_muxer != null) {
+
                 _muxer.stop();
                 _muxer.release();
                 _muxer = null;
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }finally {
-                _muxerWriteCloseLock.release();
-            }
 
+                hasVideoSetted = false;
+                hasAudioSetted = false;
             return true;
         } else {
             _presenterCallback.getMuxerErrorMsg("Stop Muxer error!");
             return false;
         }
     }
-
 
 
 }

@@ -1,7 +1,9 @@
 package com.example.clareli.mvp_video_record.Model;
 
+import android.media.AudioRecord;
+
 public interface IRecordedAudio {
-    void startRecord(int audioFrequency, int channelConfig, int encodingBit);
+    AudioRecord initRecord(int audioFrequency, int channelConfig, int encodingBit);
+    void startRecord();
     void stopRecord();
-    void setCallback(byte[] rowData, int readBytes);
 }

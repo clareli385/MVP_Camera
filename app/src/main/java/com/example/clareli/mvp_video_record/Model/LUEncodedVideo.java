@@ -65,7 +65,8 @@ public class LUEncodedVideo implements IEncodedVideo {
             @Override
             public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info) {
                 ByteBuffer buffer = codec.getOutputBuffer(index);
-                _presenterCallback.getVideoOutputBufferAvailable(info, buffer);
+                if(buffer != null)
+                    _presenterCallback.getVideoOutputBufferAvailable(info, buffer);
 
                 codec.releaseOutputBuffer(index, false);
 

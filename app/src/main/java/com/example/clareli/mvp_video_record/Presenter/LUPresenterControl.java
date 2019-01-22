@@ -51,10 +51,8 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     private Surface _previewSurface;
     private LURecordedAudio _recordedAudio;
     private LUEncodedAudio _encodedAudio;
-    //    private AudioSamples audioSamples;
     private AudioRecord _micRecord;
 
-    private long prevOutputPTSUs = 0;
     private int _channelsSampleRate;
     private static final int LAST_FRAME_ID = -1;
     private SparseLongArray mFramesUsCache = new SparseLongArray(2);
@@ -118,7 +116,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
      */
     private void startVideoRecord(SurfaceTexture previewSurTexture, int width, int height) {
         LUVideoCodecProfile videoCodecH264 = new LUVideoCodecProfile("video/avc", MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface,
-                8880000, 30, 5, 1920, 1080);
+                6000000, 30, 1, 1920, 1080);
         //TODO check MJPEG setting
         LUVideoCodecProfile videoCodecMJpeg = new LUVideoCodecProfile("video/mjpeg", MediaCodecInfo.CodecCapabilities.COLOR_FormatCbYCrY,
                 6000000, 15, 10, 1920, 1080);
@@ -131,7 +129,6 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
                 return;
             }
             _previewSurTexture.setDefaultBufferSize(width, height);
-            Log.i("CLE", "******Presenter_video:" + videoCodecH264.toString());
             _cameraCodec.configuredVideoCodec(videoCodecH264);
             _cameraCodec.startEncode();
             _previewSurface = new Surface(_previewSurTexture);
@@ -145,7 +142,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
         int channelConfig = AudioFormat.CHANNEL_IN_STEREO;
         int encodingBit = AudioFormat.ENCODING_PCM_16BIT;
         int bufferSize = AudioRecord.getMinBufferSize(sampleRateInHz,
-                channelConfig, encodingBit) * 2;
+                channelConfig, encodingBit) * 1;
         int channelCount = 1;
         LUAudioCodecProfile audioCodecProfileAAC = new LUAudioCodecProfile(MediaFormat.MIMETYPE_AUDIO_AAC,
                 44100, channelCount, 80000, MediaCodecInfo.CodecProfileLevel.AACObjectMain,
@@ -161,10 +158,8 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
                     _micRecord.startRecording();
                 }
                 _encodedAudio.configuredAudioCodec(audioCodecProfileAAC);
-                Log.i("CLE", "******Presenter_audio:" + audioCodecProfileAAC.toString());
 
                 if (_encodedAudio.getCodec() != null) {
-//                    prevOutputPTSUs = System.currentTimeMillis() * 1000;
                     _encodedAudio.startEncode();
                 }
             } else {
@@ -257,7 +252,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
                     byte[] b = new byte[encodedData.remaining()];
                     encodedData.get(b);
                     String s = bytesToHex(b);
-                    Log.d("SAMSON", s);
+//                    Log.d("SAMSON", "video_output:"+s);
 
                     _muxer.writeSampleData(encodedData, info, 1);
 
@@ -283,28 +278,30 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
 
     @Override
     public void notifyToAccessBuffer(byte[] rowData, int readBytes) {
-//        audioSamples = new AudioSamples();
-//        audioSamples.bytes = rowData;
-//        audioSamples.readBytes = readBytes;
+
     }
 
     @Override
     public void onAudioOutputFormatChanged(MediaFormat format) {
-        //_muxer.setMuxerMediaFormat(format);
+        _muxer.setMuxerMediaFormat(format);
 
     }
 
     @Override
     public void onAudioOutputBufferAvailable(MediaCodec codec, int index, final MediaCodec.BufferInfo info, final ByteBuffer encodedData) {
 
-//        if(_muxer != null && _muxer.isMuxerStarted()) {
-//            _messageViewReference.get().runOnUiThread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    //_muxer.writeSampleData(encodedData, info, 2);
-//                }
-//            });
-//        }
+        if(_muxer != null && _muxer.isMuxerStarted()) {
+            _messageViewReference.get().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    byte[] b = new byte[encodedData.remaining()];
+                    encodedData.get(b);
+                    String s = bytesToHex(b);
+//                    Log.d("SAMSON", "audio_output:"+s);
+                    _muxer.writeSampleData(encodedData, info, 2);
+                }
+            });
+        }
 
 
     }
@@ -319,6 +316,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
         final boolean eos = micRecord.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED;
         if (eos != true) {
             read = micRecord.read(inputBuffer, limit);
+
             if (read < 0)
                 read = 0;
             long pstTs = calculateFrameTimestamp(read << 3);
@@ -327,7 +325,15 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
             if (eos) {
                 flags = BUFFER_FLAG_END_OF_STREAM;
             }
+
+            //TODO
+            byte[] b = new byte[inputBuffer.remaining()];
+            inputBuffer.get(b);
+            String s = bytesToHex(b);
+            Log.d("SAMSON","_audio_input_pstTs:"+ pstTs);
             _encodedAudio.queueInputBuffer(index, offset, read, pstTs, flags);
+
+
 
         }
 

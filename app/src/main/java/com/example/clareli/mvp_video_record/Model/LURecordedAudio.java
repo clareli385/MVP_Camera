@@ -1,10 +1,8 @@
 package com.example.clareli.mvp_video_record.Model;
 
-import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 
-import android.util.Log;
 
 import com.example.clareli.mvp_video_record.Presenter.LUPresenterCallback;
 
@@ -13,8 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class LURecordedAudio implements IRecordedAudio {
     private String TAG = "LURecordedAudio";
     private AudioRecord _audioRecord;
-    private static final int RECORD_AUDIO_BUFFER_TIMES = 1;
-    private Thread _recordThread;
+    private static final int RECORD_AUDIO_BUFFER_TIMES = 2;
     private LUPresenterCallback _presenterCallback;
     private int bufferSize = 10240;
     /**
@@ -27,16 +24,22 @@ public class LURecordedAudio implements IRecordedAudio {
     }
 
     @Override
-    public void startRecord(int audioFrequency, int channelConfig, int encodingBit) {
+    public AudioRecord initRecord(int audioFrequency, int channelConfig, int encodingBit) {
         bufferSize = AudioRecord.getMinBufferSize(audioFrequency,
                 channelConfig, encodingBit) * RECORD_AUDIO_BUFFER_TIMES;
         _audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, audioFrequency,
                 channelConfig, encodingBit, bufferSize);
-        _audioRecord.startRecording();
-        recordingInProgress.set(true);
-        _recordThread = new Thread(new RecordingRunnable(), "AudioRecordThread");
-        _recordThread.start();
+        if(_audioRecord.getState() == AudioRecord.STATE_UNINITIALIZED) {
+            _presenterCallback.getAudioRecordErrorMsg("Bad arguments to AudioRecord");
+            return null;
+        } else
+            return _audioRecord;
 
+    }
+
+    @Override
+    public void startRecord() {
+        _audioRecord.startRecording();
     }
 
 
@@ -48,7 +51,6 @@ public class LURecordedAudio implements IRecordedAudio {
             _audioRecord.stop();
             _audioRecord.release();
             _audioRecord = null;
-            _recordThread = null;
         } else{
             _presenterCallback.getAudioRecordErrorMsg("stop Audio Record error!");
 
@@ -57,42 +59,42 @@ public class LURecordedAudio implements IRecordedAudio {
     }
 
 
-    @Override
-    public void setCallback(byte[] rowData, int readBytes) {
-        Log.d(TAG, "====row Data size:"+rowData.length);
-        _presenterCallback.accessAudioRecordBuffer(rowData, readBytes);
-    }
+//    @Override
+//    public void setCallback(byte[] rowData, int readBytes) {
+//        Log.d(TAG, "====row Data size:"+rowData.length);
+//        _presenterCallback.accessAudioRecordBuffer(rowData, readBytes);
+//    }
 
-    private class RecordingRunnable implements Runnable{
-
-        @Override
-        public void run() {
-            byte[] byteArray = new byte[bufferSize];
-            Log.i(TAG, "AudioRecord read:"+byteArray.length);
-            while (recordingInProgress.get()){
-                int result = _audioRecord.read(byteArray, 0, bufferSize);
-                if (result < 0) {
-                    _presenterCallback.getAudioRecordErrorMsg(getBufferReadFailureReason(result));
-                }
-                setCallback(byteArray, result);
-            }
-            byteArray = null;
-        }
-
-        private String getBufferReadFailureReason(int errorCode) {
-            switch (errorCode) {
-                case AudioRecord.ERROR_INVALID_OPERATION:
-                    return "ERROR_INVALID_OPERATION";
-                case AudioRecord.ERROR_BAD_VALUE:
-                    return "ERROR_BAD_VALUE";
-                case AudioRecord.ERROR_DEAD_OBJECT:
-                    return "ERROR_DEAD_OBJECT";
-                case AudioRecord.ERROR:
-                    return "ERROR";
-                default:
-                    return "Unknown (" + errorCode + ")";
-            }
-        }
-    }
+//    private class RecordingRunnable implements Runnable{
+//
+//        @Override
+//        public void run() {
+//            byte[] byteArray = new byte[bufferSize];
+//            Log.i(TAG, "AudioRecord read:"+byteArray.length);
+//            while (recordingInProgress.get()){
+//                int result = _audioRecord.read(byteArray, 0, bufferSize);
+//                if (result < 0) {
+//                    _presenterCallback.getAudioRecordErrorMsg(getBufferReadFailureReason(result));
+//                }
+//                setCallback(byteArray, result);
+//            }
+//            byteArray = null;
+//        }
+//
+//        private String getBufferReadFailureReason(int errorCode) {
+//            switch (errorCode) {
+//                case AudioRecord.ERROR_INVALID_OPERATION:
+//                    return "ERROR_INVALID_OPERATION";
+//                case AudioRecord.ERROR_BAD_VALUE:
+//                    return "ERROR_BAD_VALUE";
+//                case AudioRecord.ERROR_DEAD_OBJECT:
+//                    return "ERROR_DEAD_OBJECT";
+//                case AudioRecord.ERROR:
+//                    return "ERROR";
+//                default:
+//                    return "Unknown (" + errorCode + ")";
+//            }
+//        }
+//    }
 
 }

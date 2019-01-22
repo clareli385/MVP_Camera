@@ -44,11 +44,10 @@ public class LUMuxer implements IMuxer {
         if (_mime.startsWith("audio/")) {
             //write Audio format file
             audioTrackIndex = _muxer.addTrack(mediaFormat);
-           // hasAudioSetted = true;
+            hasAudioSetted = true;
         }
 
-        if (hasVideoSetted) {
-//            Log.i("LUMuxer", "muxer start!!!");
+        if (hasVideoSetted && hasAudioSetted) {
             startMuxer();
         }
 
@@ -57,19 +56,30 @@ public class LUMuxer implements IMuxer {
 
     @Override
     public boolean writeSampleData(ByteBuffer encodedData, MediaCodec.BufferInfo info, int flag) {
-        if (flag == 1) {
-            currentTrackIndex = videoTrackIndex;
-        } else if (flag == 2) {
-            currentTrackIndex = audioTrackIndex;
+        boolean result = false;
+        try {
+            _muxerWriteCloseLock.acquire();
+            if (flag == 1) {
+                currentTrackIndex = videoTrackIndex;
+            } else if (flag == 2) {
+                currentTrackIndex = audioTrackIndex;
+            }
+//            Log.d("samson", String.valueOf(currentTrackIndex));
+            _muxer.writeSampleData(currentTrackIndex, encodedData, info);
+            result = true;
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            _muxerWriteCloseLock.release();
+            return result;
         }
-        Log.d("samson", String.valueOf(currentTrackIndex));
-        _muxer.writeSampleData(currentTrackIndex, encodedData, info);
-        return true;
+
     }
 
         @Override
     public boolean isMuxerStarted() {
-        return ( hasVideoSetted);
+        return ( hasVideoSetted && hasAudioSetted);
     }
 
     private void startMuxer() {
@@ -78,19 +88,30 @@ public class LUMuxer implements IMuxer {
 
     @Override
     public boolean stopMuxer() {
-        if (_muxer != null) {
+        boolean result = false;
+        try {
+            _muxerWriteCloseLock.acquire();
+            hasVideoSetted = false;
+            hasAudioSetted = false;
+            result = true;
 
+            if (_muxer != null) {
                 _muxer.stop();
                 _muxer.release();
                 _muxer = null;
+                Log.i("SAMSON","stop muxer ok!");
+            } else {
+                _presenterCallback.getMuxerErrorMsg("Stop Muxer error!");
 
-                hasVideoSetted = false;
-                hasAudioSetted = false;
-            return true;
-        } else {
-            _presenterCallback.getMuxerErrorMsg("Stop Muxer error!");
-            return false;
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }finally {
+            _muxerWriteCloseLock.release();
+            return result;
         }
+
+
     }
 
 

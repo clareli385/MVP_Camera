@@ -138,8 +138,7 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
 
             @Override
             public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-                _presenterControl.stopVideoEncode();
-//                _presenterControl.stopMuxer();
+//                _presenterControl.stopVideoEncode();
                 return true;
             }
 

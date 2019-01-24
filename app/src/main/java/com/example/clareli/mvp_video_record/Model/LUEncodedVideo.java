@@ -11,7 +11,7 @@ import com.example.clareli.mvp_video_record.Util.LUVideoCodecProfile;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class LUEncodedVideo implements IEncodedVideo {
+public class LUEncodedVideo implements LUIEncodedVideo {
     private String TAG = "LUEncodedVideo";
 
     private LUPresenterCallback _presenterCallback;

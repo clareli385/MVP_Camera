@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-public class LUCameraClass implements ICamera {
+public class LUCameraClass implements LUICamera {
     private CameraDevice _cameraDevice;
     private CameraCaptureSession _previewSession;
     private CaptureRequest.Builder _previewBuilder;
@@ -214,7 +214,7 @@ public class LUCameraClass implements ICamera {
                             // Auto focus should be continuous for camera preview.
                             _previewBuilder = _cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                             //TODO modify to keep settings
-                            _previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+//                            _previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
                         } else {
                             //for video record and preview
                             _previewBuilder = _cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);

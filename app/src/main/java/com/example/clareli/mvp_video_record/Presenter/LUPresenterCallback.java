@@ -40,16 +40,16 @@ public class LUPresenterCallback {
         _cameraCallback.encodedAudioErrorCallback(msg);
     }
 
-    public void accessAudioRecordBuffer(byte[] rowData, int readBytes){
-        _cameraCallback.notifyToAccessBuffer(rowData, readBytes);
+    public void accessAudioRecordBuffer(byte[] rowData, long presentationTimeStamp, boolean eos){
+        _cameraCallback.notifyToAccessBuffer(rowData, presentationTimeStamp, eos);
     }
 
     public void getAudioOutputFormatChanged(MediaFormat format){
         _cameraCallback.onAudioOutputFormatChanged(format);
     }
 
-    public void getAudioOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info, ByteBuffer encodedData){
-        _cameraCallback.onAudioOutputBufferAvailable(codec, index, info, encodedData);
+    public void getAudioOutputBufferAvailable(MediaCodec.BufferInfo info, ByteBuffer encodedData){
+        _cameraCallback.onAudioOutputBufferAvailable(info, encodedData);
     }
 
     public void getAudioInputBufferAvailable(ByteBuffer inputBuffer, int index) {

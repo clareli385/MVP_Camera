@@ -6,7 +6,7 @@ import android.media.MediaMuxer;
 
 import java.nio.ByteBuffer;
 
-public interface IMuxer {
+public interface LUIMuxer {
     void setMuxerMediaFormat(MediaFormat mediaFormat);
     boolean writeSampleData(ByteBuffer encodedData, MediaCodec.BufferInfo info, int flag);
     boolean isMuxerStarted();

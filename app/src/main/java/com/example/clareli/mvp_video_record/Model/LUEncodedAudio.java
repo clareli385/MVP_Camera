@@ -2,6 +2,7 @@ package com.example.clareli.mvp_video_record.Model;
 
 import android.media.MediaCodec;
 import android.media.MediaFormat;
+import android.util.Log;
 
 import com.example.clareli.mvp_video_record.Presenter.LUPresenterCallback;
 import com.example.clareli.mvp_video_record.Util.LUAudioCodecProfile;
@@ -9,12 +10,11 @@ import com.example.clareli.mvp_video_record.Util.LUAudioCodecProfile;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class LUEncodedAudio implements IEncodedAudio {
+public class LUEncodedAudio implements LUIEncodedAudio {
     private String TAG = "LUEncodedAudio";
     private LUPresenterCallback _presenterCallback;
     private MediaFormat _audioFormat;
     private MediaCodec _audioCodec;
-//    private Thread _audioEncodedThread;
 
 
     public LUEncodedAudio(LUPresenterCallback callback){
@@ -32,8 +32,7 @@ public class LUEncodedAudio implements IEncodedAudio {
             _audioCodec = MediaCodec.createEncoderByType(audioCodecProfile.getEncodedAudioType());
             _audioCodec.configure(_audioFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
             setCodecCallback();
-//            _audioEncodedThread = new Thread(new EncodingRunnable(), "AudioEncodedThread");
-//            _audioEncodedThread.start();
+
 
         } catch (IOException e) {
             _presenterCallback.getAudioEncodedErrorMsg("Configured Audio Codec Error!");
@@ -57,7 +56,6 @@ public class LUEncodedAudio implements IEncodedAudio {
             _audioCodec.stop();
             _audioCodec.release();
             _audioCodec = null;
-//            _audioEncodedThread = null;
         } else
             _presenterCallback.getAudioEncodedErrorMsg("Stop Audio Encode Error!");
 
@@ -69,14 +67,17 @@ public class LUEncodedAudio implements IEncodedAudio {
             public void onInputBufferAvailable(MediaCodec codec, int index) {
                 ByteBuffer inputBuffer = codec.getInputBuffer(index);
                 inputBuffer.clear();
+
                 _presenterCallback.getAudioInputBufferAvailable(inputBuffer, index);
             }
 
             @Override
             public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info) {
                 ByteBuffer outputBuffer = codec.getOutputBuffer(index);
-                if(outputBuffer != null)
-                    _presenterCallback.getAudioOutputBufferAvailable(codec, index, info, outputBuffer);
+                if(outputBuffer != null) {
+
+                    _presenterCallback.getAudioOutputBufferAvailable(info, outputBuffer);
+                }
 
                 codec.releaseOutputBuffer(index, false);
 
@@ -90,15 +91,6 @@ public class LUEncodedAudio implements IEncodedAudio {
             @Override
             public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {
                 _presenterCallback.getAudioOutputFormatChanged(format);
-            }
-
-            public ByteBuffer clone(ByteBuffer original) {
-                ByteBuffer clone = ByteBuffer.allocate(original.capacity());
-                original.rewind();//copy from the beginning
-                clone.put(original);
-                original.rewind();
-                clone.flip();
-                return clone;
             }
 
         });
@@ -122,20 +114,6 @@ public class LUEncodedAudio implements IEncodedAudio {
         _audioCodec.queueInputBuffer(index, offset, size, presentationTimeUs, flags);
     }
 
-    @Override
-    public int dequeInputBuffer(int timeout) {
-        return _audioCodec.dequeueInputBuffer(timeout);
-    }
 
-
-
-//    private class EncodingRunnable implements Runnable{
-//
-//        @Override
-//        public void run() {
-//            setCodecCallback();
-//
-//        }
-//    }
 
 }

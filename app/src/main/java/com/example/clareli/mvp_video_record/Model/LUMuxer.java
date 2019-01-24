@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Semaphore;
 
-public class LUMuxer implements IMuxer {
+public class LUMuxer implements LUIMuxer {
     private MediaMuxer _muxer;
     private int audioTrackIndex = -1;
     private int videoTrackIndex = -1;
@@ -64,7 +64,6 @@ public class LUMuxer implements IMuxer {
             } else if (flag == 2) {
                 currentTrackIndex = audioTrackIndex;
             }
-//            Log.d("samson", String.valueOf(currentTrackIndex));
             _muxer.writeSampleData(currentTrackIndex, encodedData, info);
             result = true;
 
@@ -99,7 +98,6 @@ public class LUMuxer implements IMuxer {
                 _muxer.stop();
                 _muxer.release();
                 _muxer = null;
-                Log.i("SAMSON","stop muxer ok!");
             } else {
                 _presenterCallback.getMuxerErrorMsg("Stop Muxer error!");
 

@@ -15,9 +15,9 @@ public interface IPresenterCallback {
     void encodedVideoErrorCallback(String msg);
     void encodedAudioErrorCallback(String msg);
     void recordedAudioErrorCallback(String msg);
-    void notifyToAccessBuffer(byte[] rowData, int readBytes);
+    void notifyToAccessBuffer(byte[] rowData, long presentationTimeStamp, boolean eos);
     void onAudioOutputFormatChanged(MediaFormat format);
-    void onAudioOutputBufferAvailable(MediaCodec codec, int index, final MediaCodec.BufferInfo info, final ByteBuffer encodedData);
+    void onAudioOutputBufferAvailable(final MediaCodec.BufferInfo info, final ByteBuffer encodedData);
     void onAudioInputBufferAvailable(ByteBuffer inputBuffer, int index);
 
 }

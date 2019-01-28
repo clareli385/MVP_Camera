@@ -117,7 +117,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
 //        LUVideoCodecProfile videoCodecH264 = new LUVideoCodecProfile("video/avc", MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface,
 //                8880000, 30, 5, 1920, 1080);
         LUVideoCodecProfile videoCodecH264 = new LUVideoCodecProfile("video/avc", MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface,
-                5000000, 30, 5, 1920, 1080);
+                800000, 30, 5, 1920, 1080);
         //TODO check MJPEG setting
         LUVideoCodecProfile videoCodecMJpeg = new LUVideoCodecProfile("video/mjpeg", MediaCodecInfo.CodecCapabilities.COLOR_FormatCbYCrY,
                 6000000, 15, 10, 1920, 1080);

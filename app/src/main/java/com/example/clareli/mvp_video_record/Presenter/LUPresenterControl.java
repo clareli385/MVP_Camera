@@ -11,6 +11,7 @@ import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
+import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.util.Log;
@@ -113,8 +114,10 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
         _camera.createCaptureSession(...) will pass preview , record surface to builder.addTarget() and set Codec Callback
      */
     private void startVideoRecord(SurfaceTexture previewSurTexture, int width, int height) {
+//        LUVideoCodecProfile videoCodecH264 = new LUVideoCodecProfile("video/avc", MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface,
+//                8880000, 30, 5, 1920, 1080);
         LUVideoCodecProfile videoCodecH264 = new LUVideoCodecProfile("video/avc", MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface,
-                8880000, 30, 5, 1920, 1080);
+                5000000, 30, 5, 1920, 1080);
         //TODO check MJPEG setting
         LUVideoCodecProfile videoCodecMJpeg = new LUVideoCodecProfile("video/mjpeg", MediaCodecInfo.CodecCapabilities.COLOR_FormatCbYCrY,
                 6000000, 15, 10, 1920, 1080);
@@ -144,7 +147,8 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
                 channelConfig, encodingBit) * audio_buffer_times;
         int channelCount = 1;
         LUAudioCodecProfile audioCodecProfileAAC = new LUAudioCodecProfile(MediaFormat.MIMETYPE_AUDIO_AAC,
-                44100, channelCount, 80000, MediaCodecInfo.CodecProfileLevel.AACObjectMain,
+                44100, channelCount, 80000,
+                MediaCodecInfo.CodecProfileLevel.AACObjectLC/*MediaCodecInfo.CodecProfileLevel.AACObjectMain*/,
                 //16 * 10240);
                 bufferSize);
 

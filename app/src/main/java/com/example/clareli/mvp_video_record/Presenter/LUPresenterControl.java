@@ -103,7 +103,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
 
     @Override
     public void startRecord(String filePath, SurfaceTexture previewSurTexture, int width, int height) {
-        Log.i("CLARE","******Start Record**************");
+
         createMuxer(filePath);
         startVideoRecord(previewSurTexture, width, height);
         startAudioRecord();
@@ -194,7 +194,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     }
 
     private void stopAudioRecord() {
-        Log.i("CLARE","======Stop audio record and codec======");
+
         _encodedAudio.stopEncode();
         _recordedAudio.stopRecord();
         signalEndOfStream();
@@ -215,7 +215,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     public void createMuxer(String dstPath) {
         int saveOutputFormat = MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4;
         if (_muxer == null) {
-            Log.i(TAG, "video initial muxer !!!");
+
             _muxer = new LUMuxer(dstPath, saveOutputFormat, _presenterCallback);
         }
     }
@@ -247,7 +247,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     @Override
     public void onVideoOutputFormatChanged(final MediaFormat format) {
         //the format include "csd-0" and "csd-1" byte buffers
-        Log.i(TAG, "set muxer video format !!!");
+
 
         _muxer.setMuxerMediaFormat(format);
     }
@@ -263,10 +263,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
 
                 @Override
                 public void run() {
-                    byte[] b = new byte[encodedData.remaining()];
-                    encodedData.get(b);
-                    String s = bytesToHex(b);
-                    Log.d("AAAA", "Pres_video_output:" + s);
+
                     _muxer.writeSampleData(encodedData, info, 1);
 
                 }
@@ -293,8 +290,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     @Override
     public void notifyToAccessBuffer(byte[] rowData, long presentationTimeStamp, boolean eos) {
 
-        String s = bytesToHex(rowData);
-        Log.i("AAAA","audio record data:"+s);
+
         AudioRawData audioRawData = new AudioRawData(rowData, presentationTimeStamp, eos);
         _audioQueue.push(audioRawData);
 
@@ -313,10 +309,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
             _messageViewReference.get().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    byte[] b = new byte[encodedData.remaining()];
-                    encodedData.get(b);
-                    String s = bytesToHex(b);
-                    Log.d("AAAA", "Pre_audio_output:" + s);
+
                     _muxer.writeSampleData(encodedData, info, 2);
                 }
             });
@@ -340,8 +333,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
                     }
                     if ((audioTempData.getRowData() != null) && (audioTempData.getRowData().length > 0)) {
                         inputBuffer.put(audioTempData.getRowData());
-                        String output = bytesToHex(audioTempData.getRowData());
-                        Log.d("AAAA", "Pre_audio_input:" + output);
+
                         _encodedAudio.queueInputBuffer(index, 0, audioTempData.getRowData().length, audioTempData.getPresentationTimeStamp(), flags);
 
                     }

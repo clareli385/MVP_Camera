@@ -74,7 +74,7 @@ public class LUEncodedAudio implements LUIEncodedAudio {
                 ByteBuffer inputBuffer = codec.getInputBuffer(index);
                 inputBuffer.clear();
                 if(inputBuffer != null) {
-                    Log.i("AAAA","encoded audio input avail");
+
                     _presenterCallback.getAudioInputBufferAvailable(inputBuffer, index);
                 }
             }
@@ -83,7 +83,7 @@ public class LUEncodedAudio implements LUIEncodedAudio {
             public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info) {
                 ByteBuffer outputBuffer = codec.getOutputBuffer(index);
                 if(outputBuffer != null) {
-                    Log.i("AAAA","encoded audio output avail");
+
                     _presenterCallback.getAudioOutputBufferAvailable(info, outputBuffer);
                 }
 

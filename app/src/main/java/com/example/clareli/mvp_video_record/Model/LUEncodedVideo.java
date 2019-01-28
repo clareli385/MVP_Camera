@@ -66,7 +66,6 @@ public class LUEncodedVideo implements LUIEncodedVideo {
             public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info) {
                 ByteBuffer buffer = codec.getOutputBuffer(index);
                 if(buffer != null) {
-                    Log.i("AAAA","encoded video output avail");
 
                     _presenterCallback.getVideoOutputBufferAvailable(info, buffer);
 

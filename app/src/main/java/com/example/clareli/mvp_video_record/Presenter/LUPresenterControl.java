@@ -103,6 +103,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
 
     @Override
     public void startRecord(String filePath, SurfaceTexture previewSurTexture, int width, int height) {
+        Log.i("CLARE","******Start Record**************");
         createMuxer(filePath);
         startVideoRecord(previewSurTexture, width, height);
         startAudioRecord();
@@ -138,7 +139,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
         int sampleRateInHz = 44100;
         int channelConfig = AudioFormat.CHANNEL_IN_MONO;
         int encodingBit = AudioFormat.ENCODING_PCM_16BIT;
-        int audio_buffer_times = 2;
+        int audio_buffer_times = 1;
         int bufferSize = AudioRecord.getMinBufferSize(sampleRateInHz,
                 channelConfig, encodingBit) * audio_buffer_times;
         int channelCount = 1;
@@ -153,9 +154,9 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
                 if (_micRecord != null) {
                     _encodedAudio.configuredAudioCodec(audioCodecProfileAAC);
                     if (_encodedAudio.getCodec() != null) {
+                        _encodedAudio.startEncode();
                         _recordedAudio.startRecord();
                         _recordedAudio.getRecordData();
-                        _encodedAudio.startEncode();
 
                     }
                 }
@@ -174,6 +175,9 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     public void stopRecord() {
         stopVideoRecord();
         stopAudioRecord();
+        _encodedVideo.releaseEncode();
+        _recordedAudio.releaseEncode();
+        _encodedAudio.releaseEncode();
     }
 
     /*
@@ -190,8 +194,21 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     }
 
     private void stopAudioRecord() {
-        _recordedAudio.stopRecord();
+        Log.i("CLARE","======Stop audio record and codec======");
         _encodedAudio.stopEncode();
+        _recordedAudio.stopRecord();
+        signalEndOfStream();
+
+    }
+
+
+    private void signalEndOfStream() {
+        MediaCodec.BufferInfo eos = new MediaCodec.BufferInfo();
+        ByteBuffer buffer = ByteBuffer.allocate(0);
+        eos.set(0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+        _muxer.writeSampleData(buffer, eos, 1);
+        _muxer.writeSampleData(buffer, eos, 2);
+
     }
 
     @Override
@@ -249,7 +266,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
                     byte[] b = new byte[encodedData.remaining()];
                     encodedData.get(b);
                     String s = bytesToHex(b);
-                    Log.d("SAMSON", "video_output:" + s);
+                    Log.d("AAAA", "Pres_video_output:" + s);
                     _muxer.writeSampleData(encodedData, info, 1);
 
                 }
@@ -276,11 +293,8 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     @Override
     public void notifyToAccessBuffer(byte[] rowData, long presentationTimeStamp, boolean eos) {
 
-//        _audioRowData = rowData;
-//        _presentationTimeStamp = presentationTimeStamp;
-//        _audioEOS = eos;
         String s = bytesToHex(rowData);
-        Log.d("SAMSON", "==audio_record:" + s);
+        Log.i("AAAA","audio record data:"+s);
         AudioRawData audioRawData = new AudioRawData(rowData, presentationTimeStamp, eos);
         _audioQueue.push(audioRawData);
 
@@ -302,7 +316,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
                     byte[] b = new byte[encodedData.remaining()];
                     encodedData.get(b);
                     String s = bytesToHex(b);
-                    Log.d("SAMSON", "audio_output:" + s);
+                    Log.d("AAAA", "Pre_audio_output:" + s);
                     _muxer.writeSampleData(encodedData, info, 2);
                 }
             });
@@ -311,27 +325,38 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
 
     }
 
+    /*2019-01-28, Clare
+    after audioRecord.stop(), we cannot call audioRecord.getRecordingState()
+    * */
     @Override
     public void onAudioInputBufferAvailable(ByteBuffer inputBuffer, int index) {
+        int flags = BUFFER_FLAG_KEY_FRAME;
+            _recordedAudio.getRecordData();
+            if(_audioQueue.isEmpty()== false){
+                AudioRawData audioTempData = (AudioRawData)_audioQueue.pop();
+                if(audioTempData != null) {
+                    if (audioTempData.getEOS()) {
+                        flags = BUFFER_FLAG_END_OF_STREAM;
+                    }
+                    if ((audioTempData.getRowData() != null) && (audioTempData.getRowData().length > 0)) {
+                        inputBuffer.put(audioTempData.getRowData());
+                        String output = bytesToHex(audioTempData.getRowData());
+                        Log.d("AAAA", "Pre_audio_input:" + output);
+                        _encodedAudio.queueInputBuffer(index, 0, audioTempData.getRowData().length, audioTempData.getPresentationTimeStamp(), flags);
 
-        _recordedAudio.getRecordData();
-        if(_audioQueue.isEmpty()== false){
-            int flags = BUFFER_FLAG_KEY_FRAME;
-
-            AudioRawData audioTempData = (AudioRawData)_audioQueue.pop();
-            if(audioTempData != null) {
-                if (audioTempData.getEOS()) {
-                    flags = BUFFER_FLAG_END_OF_STREAM;
+                    }
                 }
-                if ((audioTempData.getRowData() != null) && (audioTempData.getRowData().length > 0)) {
-                    inputBuffer.put(audioTempData.getRowData());
 
-                    _encodedAudio.queueInputBuffer(index, 0, audioTempData.getRowData().length, audioTempData.getPresentationTimeStamp(), flags);
+            } else {
+                MediaCodec.BufferInfo eos = new MediaCodec.BufferInfo();
+                ByteBuffer buffer = ByteBuffer.allocate(0);
+                long presentationTimeStamp = System.nanoTime() / 1000;
+                flags = BUFFER_FLAG_END_OF_STREAM;
+                eos.set(0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                _encodedAudio.queueInputBuffer(index, 0, buffer.capacity(), presentationTimeStamp, flags);
 
-                }
             }
 
-        }
 
     }
 

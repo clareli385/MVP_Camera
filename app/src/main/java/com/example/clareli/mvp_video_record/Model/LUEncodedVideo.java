@@ -2,6 +2,7 @@ package com.example.clareli.mvp_video_record.Model;
 
 import android.media.MediaCodec;
 import android.media.MediaFormat;
+import android.util.Log;
 import android.view.Surface;
 
 import com.example.clareli.mvp_video_record.Presenter.LUPresenterCallback;
@@ -34,10 +35,9 @@ public class LUEncodedVideo implements LUIEncodedVideo {
             _videoFormat.setInteger(MediaFormat.KEY_BIT_RATE, videoCodec.getVideoBitrate());
             _videoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, videoCodec.getVideoFramePerSecond());
             _videoFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, videoCodec.getIFrameInterval());
-
+            setCodecCallback();
             _videoEncoder.configure(_videoFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
             _recordSurface = _videoEncoder.createInputSurface();
-            setCodecCallback();
 
         } catch (IOException e) {
             _presenterCallback.getVideoEncodedErrorMsg("configured Video Codec error!");
@@ -65,9 +65,12 @@ public class LUEncodedVideo implements LUIEncodedVideo {
             @Override
             public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info) {
                 ByteBuffer buffer = codec.getOutputBuffer(index);
-                if(buffer != null)
+                if(buffer != null) {
+                    Log.i("AAAA","encoded video output avail");
+
                     _presenterCallback.getVideoOutputBufferAvailable(info, buffer);
 
+                }
                 codec.releaseOutputBuffer(index, false);
 
             }
@@ -100,13 +103,18 @@ public class LUEncodedVideo implements LUIEncodedVideo {
     public void stopEncode() {
         try {
             _videoEncoder.stop();
-            _videoEncoder.release();
-            _videoEncoder = null;
+
         } catch (Exception e) {
             _videoEncoder = null;
             _presenterCallback.getVideoEncodedErrorMsg("Stop Encoded error!");
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void releaseEncode() {
+        _videoEncoder.release();
+        _videoEncoder = null;
     }
 
 }

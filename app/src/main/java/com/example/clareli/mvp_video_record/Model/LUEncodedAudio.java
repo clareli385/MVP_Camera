@@ -30,11 +30,12 @@ public class LUEncodedAudio implements LUIEncodedAudio {
         _audioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, audioCodecProfile.getMaxInputSize());
         try {
             _audioCodec = MediaCodec.createEncoderByType(audioCodecProfile.getEncodedAudioType());
-            _audioCodec.configure(_audioFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
             setCodecCallback();
+            _audioCodec.configure(_audioFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 
 
         } catch (IOException e) {
+            _audioCodec = null;
             _presenterCallback.getAudioEncodedErrorMsg("Configured Audio Codec Error!");
             e.printStackTrace();
         }
@@ -54,11 +55,16 @@ public class LUEncodedAudio implements LUIEncodedAudio {
     public void stopEncode() {
         if(_audioCodec != null){
             _audioCodec.stop();
-            _audioCodec.release();
-            _audioCodec = null;
+
         } else
             _presenterCallback.getAudioEncodedErrorMsg("Stop Audio Encode Error!");
 
+    }
+
+    @Override
+    public void releaseEncode() {
+        _audioCodec.release();
+        _audioCodec = null;
     }
 
     private void setCodecCallback() {
@@ -67,15 +73,17 @@ public class LUEncodedAudio implements LUIEncodedAudio {
             public void onInputBufferAvailable(MediaCodec codec, int index) {
                 ByteBuffer inputBuffer = codec.getInputBuffer(index);
                 inputBuffer.clear();
-
-                _presenterCallback.getAudioInputBufferAvailable(inputBuffer, index);
+                if(inputBuffer != null) {
+                    Log.i("AAAA","encoded audio input avail");
+                    _presenterCallback.getAudioInputBufferAvailable(inputBuffer, index);
+                }
             }
 
             @Override
             public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info) {
                 ByteBuffer outputBuffer = codec.getOutputBuffer(index);
                 if(outputBuffer != null) {
-
+                    Log.i("AAAA","encoded audio output avail");
                     _presenterCallback.getAudioOutputBufferAvailable(info, outputBuffer);
                 }
 

@@ -9,4 +9,6 @@ public interface LUIEncodedVideo {
     Surface getSurface();
     void startEncode();
     void stopEncode();
+    void releaseEncode();
+
 }

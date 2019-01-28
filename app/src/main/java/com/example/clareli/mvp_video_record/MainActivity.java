@@ -19,6 +19,8 @@ import com.example.clareli.mvp_video_record.View.IViewErrorCallback;
 import com.example.clareli.mvp_video_record.View.LUViewErrorCallback;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import static android.Manifest.permission.CAMERA;
 import static android.Manifest.permission.RECORD_AUDIO;
@@ -32,7 +34,7 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     private String TAG = "MainActivity";
     private Button _recordStartBtn;
     private IPresenterControl _presenterControl = null;
-    private static String _fileName = "mvp_mediacodec.mp4";
+    private static String _fileName = "_mediacodec.mp4";
 
     private String _filePath = null;
     private File _fileRecord = null;
@@ -84,7 +86,6 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
             //save to internal storage D
             _filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath();
 
-            _fileRecord = new File(_filePath, _fileName);
         }
     }
 
@@ -103,6 +104,11 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
                 switch (v.getId()) {
                     case R.id.record_btn:
                         if (_isRecordingVideo == false) {
+                            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd--hh-mm-ss");
+                            String format = simpleDateFormat.format(new Date());
+                            String finalName = format+_fileName;
+                            _fileRecord = new File(_filePath, finalName);
+
                             _isRecordingVideo = true;
                             _recordStartBtn.setText("Stop");
                             _presenterControl.startRecord(_fileRecord.getAbsolutePath(), _textureView.getSurfaceTexture(), _textureView.getWidth(), _textureView.getHeight());

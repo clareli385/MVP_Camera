@@ -48,9 +48,7 @@ public class LURecordedAudio implements LUIRecordedAudio {
     public void startRecord() {
         _isRecording = true;
         _audioRecord.startRecording();
-//        recordingInProgress.set(true);
-//        _recordThread = new Thread(new RecordingRunnable(), TAG);
-//        _recordThread.start();
+
 
     }
 
@@ -59,8 +57,10 @@ public class LURecordedAudio implements LUIRecordedAudio {
         byte[] byteArray = new byte[bufferSize];
         _presentationTimeStamp = System.nanoTime() / 1000;
         eos = _audioRecord.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED;
-        _audioRecord.read(byteArray, 0, bufferSize);
-        _presenterCallback.accessAudioRecordBuffer(byteArray, _presentationTimeStamp, eos);
+        if(eos == false) {
+            _audioRecord.read(byteArray, 0, bufferSize);
+            _presenterCallback.accessAudioRecordBuffer(byteArray, _presentationTimeStamp, eos);
+        }
     }
 
 
@@ -68,53 +68,18 @@ public class LURecordedAudio implements LUIRecordedAudio {
     public void stopRecord() {
         _isRecording = false;
         if (_audioRecord != null) {
-//            recordingInProgress.set(false);
             _audioRecord.stop();
-            _audioRecord.release();
-            _audioRecord = null;
+
         } else {
             _presenterCallback.getAudioRecordErrorMsg("stop Audio Record error!");
 
         }
-//        _recordThread = null;
     }
 
-    private class RecordingRunnable implements Runnable {
-
-        @Override
-        public void run() {
-            byte[] byteArray = new byte[bufferSize];
-            Log.i(TAG, "AudioRecord read:" + byteArray.length);
-//            while (recordingInProgress.get()) {
-            while (_isRecording){
-                int result = _audioRecord.read(byteArray, 0, bufferSize);
-//                if (result < 0) {
-//                    _presenterCallback.getAudioRecordErrorMsg(getBufferReadFailureReason(result));
-//                }
-
-                _presentationTimeStamp = System.nanoTime() / 1000;
-                eos = _audioRecord.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED;
-                _audioRecord.read(byteArray, 0, bufferSize);
-                _presenterCallback.accessAudioRecordBuffer(byteArray, _presentationTimeStamp, eos);
-            }
-            byteArray = null;
-        }
-
-        private String getBufferReadFailureReason(int errorCode) {
-            switch (errorCode) {
-                case AudioRecord.ERROR_INVALID_OPERATION:
-                    return "ERROR_INVALID_OPERATION";
-                case AudioRecord.ERROR_BAD_VALUE:
-                    return "ERROR_BAD_VALUE";
-                case AudioRecord.ERROR_DEAD_OBJECT:
-                    return "ERROR_DEAD_OBJECT";
-                case AudioRecord.ERROR:
-                    return "ERROR";
-                default:
-                    return "Unknown (" + errorCode + ")";
-            }
-        }
-
+    @Override
+    public void releaseEncode() {
+        _audioRecord.release();
+        _audioRecord = null;
     }
 
 

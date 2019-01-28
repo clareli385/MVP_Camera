@@ -6,5 +6,6 @@ public interface LUIRecordedAudio {
     AudioRecord initRecord(int audioFrequency, int channelConfig, int encodingBit, int audio_buffer_times);
     void startRecord();
     void stopRecord();
+    void releaseEncode();
     void getRecordData();
 }

@@ -9,6 +9,7 @@ public interface LUIEncodedAudio {
     void configuredAudioCodec(LUAudioCodecProfile audioCodecProfile);
     void startEncode();
     void stopEncode();
+    void releaseEncode();
     MediaCodec getCodec();
     MediaFormat getFormat();
     void queueInputBuffer(int index, int offset, int size, long presentationTimeUs, int flags);

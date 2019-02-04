@@ -14,4 +14,5 @@ public interface IPresenterControl {
     void startRecord(String filePath, SurfaceTexture previewSurTexture, int width, int height);
     void stopMuxer();
     void createMuxer(String dstPath);
+    void findSupportedCodecs();
 }

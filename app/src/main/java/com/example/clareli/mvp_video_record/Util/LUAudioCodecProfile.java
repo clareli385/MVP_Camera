@@ -1,19 +1,24 @@
 package com.example.clareli.mvp_video_record.Util;
 
+import android.media.MediaCodecInfo;
+
 public class LUAudioCodecProfile {
+    String _encodecName;
     String _encodedAudioType;
     int _sampleRate;
     int _channelCount;
     int _bitRate;
-    int _profileType;
     int _maxInputSize;
+    int _profileLevel;
 
-    public LUAudioCodecProfile(String encodedAudioType, int sampleRate, int channelCount, int bitRate, int profileType, int maxInputSize){
+    public LUAudioCodecProfile(String encodecName, String encodedAudioType, int sampleRate, int channelCount, int bitRate,
+                               int profileLevel, int maxInputSize){
+        _encodecName = encodecName;
         _encodedAudioType = encodedAudioType;
         _sampleRate = sampleRate;
         _channelCount = channelCount;
         _bitRate = bitRate;
-        _profileType = profileType;
+        _profileLevel = profileLevel;
         _maxInputSize = maxInputSize;
 
     }
@@ -34,23 +39,25 @@ public class LUAudioCodecProfile {
         return _bitRate;
     }
 
-    public int getProfileType(){
-        return _profileType;
+    public int getProfileLevel(){
+        return _profileLevel;
     }
 
     public int getMaxInputSize(){
         return _maxInputSize;
     }
 
+
     @Override
     public String toString() {
         return "LUAudioCodecProfile{" +
-                "_encodedAudioType='" + _encodedAudioType + '\'' +
+                "_encodecName='" + _encodecName + '\'' +
+                ", _encodedAudioType='" + _encodedAudioType + '\'' +
                 ", _sampleRate=" + _sampleRate +
                 ", _channelCount=" + _channelCount +
                 ", _bitRate=" + _bitRate +
-                ", _profileType=" + _profileType +
                 ", _maxInputSize=" + _maxInputSize +
+                ", _profileLevel=" + _profileLevel +
                 '}';
     }
 }

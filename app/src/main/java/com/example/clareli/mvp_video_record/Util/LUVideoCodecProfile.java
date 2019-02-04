@@ -3,23 +3,34 @@ package com.example.clareli.mvp_video_record.Util;
 import android.media.MediaCodecInfo;
 
 public class LUVideoCodecProfile {
+    String _encodedName;
     String _encodedVideoType;
-    int _colorFormat;
-    int _videoBitrate;
-    int _videoFramePerSecond;//FPS
-    int _iFrameInterval;
     int _width;
     int _height;
-    public LUVideoCodecProfile(String encodedVideoType, int colorFormat, int videoBitrate, int videoFramePerSecond, int iFrameInterval, int width, int height){
+    int _videoFrameRates;//FPS
+    int _videoBitrate;
+    int _iFrameInterval;
+    int _colorFormat;
+    MediaCodecInfo.CodecProfileLevel _profileLevel;
+
+    public LUVideoCodecProfile(String encodedName, String encodedVideoType, int colorFormat, int videoBitrate,
+                               int videoFramePerSecond, int iFrameInterval, int width, int height, MediaCodecInfo.CodecProfileLevel profileLevel){
+        _encodedName = encodedName;
         _encodedVideoType = encodedVideoType;
         _colorFormat = colorFormat;
         _videoBitrate = videoBitrate;
-        _videoFramePerSecond = videoFramePerSecond;
+        _videoFrameRates = videoFramePerSecond;
         _iFrameInterval = iFrameInterval;
         _width = width;
         _height = height;
+        _profileLevel = profileLevel;
 
     }
+
+    public String getEncodedName(){
+        return _encodedName;
+    }
+
     public String getEncodedVideoType(){
         return _encodedVideoType;
     }
@@ -32,8 +43,8 @@ public class LUVideoCodecProfile {
         return _videoBitrate;
     }
 
-    public int getVideoFramePerSecond(){
-        return _videoFramePerSecond;
+    public int getVideoFrameRates(){
+        return _videoFrameRates;
     }
 
     public int getIFrameInterval(){
@@ -48,16 +59,23 @@ public class LUVideoCodecProfile {
         return _height;
     }
 
+    public MediaCodecInfo.CodecProfileLevel getProfileLevel(){
+        return _profileLevel;
+    }
+
+
     @Override
     public String toString() {
         return "LUVideoCodecProfile{" +
-                "_encodedVideoType='" + _encodedVideoType + '\'' +
-                ", _colorFormat=" + _colorFormat +
-                ", _videoBitrate=" + _videoBitrate +
-                ", _videoFramePerSecond=" + _videoFramePerSecond +
-                ", _iFrameInterval=" + _iFrameInterval +
+                "_encodedName='" + _encodedName + '\'' +
+                ", _encodedVideoType='" + _encodedVideoType + '\'' +
                 ", _width=" + _width +
                 ", _height=" + _height +
+                ", _videoFrameRates=" + _videoFrameRates +
+                ", _videoBitrate=" + _videoBitrate +
+                ", _iFrameInterval=" + _iFrameInterval +
+                ", _colorFormat=" + _colorFormat +
+                ", _profileLevel=" + _profileLevel +
                 '}';
     }
 }

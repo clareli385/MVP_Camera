@@ -2,10 +2,10 @@ package com.example.clareli.mvp_video_record.Model;
 
 import android.media.MediaCodec;
 import android.media.MediaFormat;
-import android.util.Log;
 import android.view.Surface;
 
 import com.example.clareli.mvp_video_record.Presenter.LUPresenterCallback;
+import com.example.clareli.mvp_video_record.Util.LUEncodeFinder;
 import com.example.clareli.mvp_video_record.Util.LUVideoCodecProfile;
 
 
@@ -33,8 +33,9 @@ public class LUEncodedVideo implements LUIEncodedVideo {
             _videoFormat = MediaFormat.createVideoFormat(videoCodec.getEncodedVideoType(), videoCodec.getWidth(), videoCodec.getHeight());
             _videoFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, videoCodec.getColorFormat());
             _videoFormat.setInteger(MediaFormat.KEY_BIT_RATE, videoCodec.getVideoBitrate());
-            _videoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, videoCodec.getVideoFramePerSecond());
+            _videoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, videoCodec.getVideoFrameRates());
             _videoFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, videoCodec.getIFrameInterval());
+
             setCodecCallback();
             _videoEncoder.configure(_videoFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
             _recordSurface = _videoEncoder.createInputSurface();

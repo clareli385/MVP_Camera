@@ -2,7 +2,6 @@ package com.example.clareli.mvp_video_record.Model;
 
 import android.media.MediaCodec;
 import android.media.MediaFormat;
-import android.util.Log;
 
 import com.example.clareli.mvp_video_record.Presenter.LUPresenterCallback;
 import com.example.clareli.mvp_video_record.Util.LUAudioCodecProfile;
@@ -26,7 +25,7 @@ public class LUEncodedAudio implements LUIEncodedAudio {
         _audioFormat = MediaFormat.createAudioFormat(audioCodecProfile.getEncodedAudioType(),
                 audioCodecProfile.getSampleRate(), audioCodecProfile.getChannelCount());
         _audioFormat.setInteger(MediaFormat.KEY_BIT_RATE, audioCodecProfile.getBitRate());
-        _audioFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, audioCodecProfile.getProfileType());
+        _audioFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, audioCodecProfile.getProfileLevel());
         _audioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, audioCodecProfile.getMaxInputSize());
         try {
             _audioCodec = MediaCodec.createEncoderByType(audioCodecProfile.getEncodedAudioType());

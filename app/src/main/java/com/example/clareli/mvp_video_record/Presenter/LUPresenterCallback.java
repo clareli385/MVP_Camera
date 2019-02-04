@@ -2,6 +2,7 @@ package com.example.clareli.mvp_video_record.Presenter;
 
 import android.hardware.camera2.CameraDevice;
 import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 
 import java.nio.ByteBuffer;
@@ -58,6 +59,14 @@ public class LUPresenterCallback {
 
     public void getAudioRecordErrorMsg(String msg){
         _cameraCallback.recordedAudioErrorCallback(msg);
+    }
+
+    public void findVideoEncodeResult(MediaCodecInfo[] infos){
+        _cameraCallback.getVideoEncodeResult(infos);
+    }
+
+    public void findAudioEncodeResult(MediaCodecInfo[] infos){
+        _cameraCallback.getAudioEncodeResult(infos);
     }
 
 }

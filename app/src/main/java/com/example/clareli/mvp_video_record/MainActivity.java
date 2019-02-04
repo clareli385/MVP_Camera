@@ -95,6 +95,7 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
         //2019-01-20,Clare
         // it needs presenter object, so after initialize _presenterControl
         setupSurfaceTextureListener();
+        _presenterControl.findSupportedCodecs();
     }
 
     public void setupButtonClickListener(){

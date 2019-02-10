@@ -129,21 +129,29 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
 
     /*  start to do video record
         _camera.createCaptureSession(...) will pass preview , record surface to builder.addTarget() and set Codec Callback
+        In test device Sony XZP android 8.0, using codec VIDEO_GOOGLE_H264_ENCODER =>
+        width max:1920, height max:1080, frame rate max:30
      */
-    //String encodedName, String encodedVideoType, int colorFormat, int videoBitrate,
-    //                               int videoFramePerSecond, int iFrameInterval, int width, int height, int profileLevel
     private void startVideoRecord(SurfaceTexture previewSurTexture, int width, int height) {
+        int colorFormat;
+        int videoBitrate;
+        int videoFrameRates;
         setSelectedVideoCodecName(VIDEO_GOOGLE_H264_ENCODER);
         MediaCodecInfo mediaCodecInfo = getVideoCodecInfo(getSelectedVideoCodecName());
+        if(mediaCodecInfo == null) {
+            _LU_viewErrorCallback.viewShowErrorDialog("Cannot get Video Codec Info!");
+            return;
+        }
         LUVideoCodecInfo videoCodecInfo = toVideoCodecInfo(mediaCodecInfo, _selectedVideoMimeType);
+        colorFormat = videoCodecInfo.getColorFormats()[videoCodecInfo.getColorFormats().length - 1];
+        videoBitrate = videoCodecInfo.getBitRatesMax();
+        videoFrameRates = 30;
 
-        videoCodecH264 = new LUVideoCodecProfile(VIDEO_GOOGLE_H264_ENCODER, VIDEO_AVC,
-                MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface, 800000,
-                30, 5, 1920, 1080, videoCodecInfo.getProfileLevels()[0]);
+        videoCodecH264 = new LUVideoCodecProfile(getSelectedVideoCodecName(), _selectedVideoMimeType,
+                colorFormat, videoBitrate,
+                videoFrameRates, 5, 1920, 1080, videoCodecInfo.getProfileLevels()[videoCodecInfo.getProfileLevels().length - 1]);
         if(isVideoCodecSettingAvailable(videoCodecH264) == true) {
-            //TODO check MJPEG setting
-//        LUVideoCodecProfile videoCodecMJpeg = new LUVideoCodecProfile(VIDEO_GOOGLE_H264_ENCODER, "video/mjpeg", MediaCodecInfo.CodecCapabilities.COLOR_FormatCbYCrY,
-//                6000000, 15, 10, 1920, 1080, MediaCodecInfo.CodecProfileLevel.AVCProfileBaseline);
+
             //TODO modify preview result not callback _cameraDevice
             if (_cameraDevice != null) {
                 _camera.closePreviewSession();
@@ -177,6 +185,10 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
         int lengthSampleRate;
         setSelectedAudioCodecName(AUDIO_GOOGLE_AAC_ENCODER);
         MediaCodecInfo mediaCodecInfo = getAudioCodecInfo(getSelectedAudioCodecName());
+        if(mediaCodecInfo == null) {
+            _LU_viewErrorCallback.viewShowErrorDialog("Cannot get Audio Codec Info!");
+            return;
+        }
         LUAudioCodecInfo audioCodecInfo = toAudioCodecInfo(mediaCodecInfo, _selectedAudioMimeType);
         channelCount = 2;
         bitRate = audioCodecInfo.getBitRatesMax();

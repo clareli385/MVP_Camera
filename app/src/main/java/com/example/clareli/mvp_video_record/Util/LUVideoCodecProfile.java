@@ -14,12 +14,12 @@ public class LUVideoCodecProfile {
     MediaCodecInfo.CodecProfileLevel _profileLevel;
 
     public LUVideoCodecProfile(String encodedName, String encodedVideoType, int colorFormat, int videoBitrate,
-                               int videoFramePerSecond, int iFrameInterval, int width, int height, MediaCodecInfo.CodecProfileLevel profileLevel){
+                               int videoFrameRates, int iFrameInterval, int width, int height, MediaCodecInfo.CodecProfileLevel profileLevel){
         _encodedName = encodedName;
         _encodedVideoType = encodedVideoType;
         _colorFormat = colorFormat;
         _videoBitrate = videoBitrate;
-        _videoFrameRates = videoFramePerSecond;
+        _videoFrameRates = videoFrameRates;
         _iFrameInterval = iFrameInterval;
         _width = width;
         _height = height;

@@ -156,7 +156,7 @@ public class LUEncodeFinder {
         return res.profile > 0 && res.level >= 0 ? res : null;
     }
 
-    private static <T> int keyOfValue(SparseArray<T> array, T value) {
+    public static <T> int keyOfValue(SparseArray<T> array, T value) {
         int size = array.size();
         for (int i = 0; i < size; i++) {
             T t = array.valueAt(i);
@@ -167,7 +167,7 @@ public class LUEncodeFinder {
         return -1;
     }
 
-    private static void initProfileLevels() {
+    public static void initProfileLevels() {
         Field[] fields = MediaCodecInfo.CodecProfileLevel.class.getFields();
         for (Field f : fields) {
             if ((f.getModifiers() & (Modifier.STATIC | Modifier.FINAL)) == 0) {

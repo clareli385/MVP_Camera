@@ -4,6 +4,9 @@ import android.media.MediaCodecInfo;
 
 import java.util.Arrays;
 
+/*2019-02-11,Clare
+This class is for selected video codec.
+* */
 public class LUVideoCodecInfo {
     String _encodecName;
     String _supportedType;

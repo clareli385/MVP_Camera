@@ -2,6 +2,10 @@ package com.example.clareli.mvp_video_record.Util;
 
 import java.util.Arrays;
 
+
+/*2019-02-11,Clare
+This class is for read video codec spec lists after app started
+* */
 public class LUAudioCodecInfo {
     String _encodecName;
     String _supportedType;

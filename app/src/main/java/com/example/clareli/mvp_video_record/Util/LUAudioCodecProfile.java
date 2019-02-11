@@ -1,7 +1,20 @@
 package com.example.clareli.mvp_video_record.Util;
 
-import android.media.MediaCodecInfo;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.example.clareli.mvp_video_record.Util.IConstant.ENCODEC_AUDIO_BIT_RATE;
+import static com.example.clareli.mvp_video_record.Util.IConstant.ENCODEC_AUDIO_CHANNEL_COUNT;
+import static com.example.clareli.mvp_video_record.Util.IConstant.ENCODEC_AUDIO_MAX_INPUT_SIZE;
+import static com.example.clareli.mvp_video_record.Util.IConstant.ENCODEC_AUDIO_SAMPLE_RATE;
+import static com.example.clareli.mvp_video_record.Util.IConstant.ENCODEC_AUDIO_TYPE;
+import static com.example.clareli.mvp_video_record.Util.IConstant.ENCODEC_NAME;
+import static com.example.clareli.mvp_video_record.Util.IConstant.ENCODEC_PROFILE_LEVEL;
+
+/*2019-02-11,Clare
+This class is for selected audio codec.
+* */
 public class LUAudioCodecProfile {
     String _encodecName;
     String _encodedAudioType;
@@ -60,4 +73,31 @@ public class LUAudioCodecProfile {
                 ", _profileLevel=" + _profileLevel +
                 '}';
     }
+
+    public Map<String, String> audioProfileToMap(){
+        Map<String, String> audioSelectedCodec = new HashMap<String, String>();
+        audioSelectedCodec.put(ENCODEC_NAME, _encodecName);
+        audioSelectedCodec.put(ENCODEC_AUDIO_TYPE, _encodedAudioType);
+        audioSelectedCodec.put(ENCODEC_AUDIO_SAMPLE_RATE, String.valueOf(_sampleRate));
+        audioSelectedCodec.put(ENCODEC_AUDIO_CHANNEL_COUNT, String.valueOf(_channelCount));
+        audioSelectedCodec.put(ENCODEC_AUDIO_BIT_RATE, String.valueOf(_bitRate));
+        audioSelectedCodec.put(ENCODEC_AUDIO_MAX_INPUT_SIZE, String.valueOf(_maxInputSize));
+        audioSelectedCodec.put(ENCODEC_PROFILE_LEVEL, String.valueOf(_profileLevel));
+        return audioSelectedCodec;
+    }
+
+    static public LUAudioCodecProfile mapToAudioProfile(Map<String, String> audioSelectedCodec){
+
+        LUAudioCodecProfile tempProfile = new LUAudioCodecProfile(
+                audioSelectedCodec.get(ENCODEC_NAME),
+                audioSelectedCodec.get(ENCODEC_AUDIO_TYPE),
+                Integer.parseInt(audioSelectedCodec.get(ENCODEC_AUDIO_SAMPLE_RATE)),
+                Integer.parseInt(audioSelectedCodec.get(ENCODEC_AUDIO_CHANNEL_COUNT)),
+                Integer.parseInt(audioSelectedCodec.get(ENCODEC_AUDIO_BIT_RATE)),
+                Integer.parseInt(audioSelectedCodec.get(ENCODEC_PROFILE_LEVEL)),
+                Integer.parseInt(audioSelectedCodec.get(ENCODEC_AUDIO_MAX_INPUT_SIZE)));
+        return tempProfile;
+
+    }
+
 }

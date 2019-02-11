@@ -12,7 +12,7 @@ public interface IConstant {
             Manifest.permission.RECORD_AUDIO,
             Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
-    public final static String USER_PREFERENCES     = "User Preferences";
+    public static final String USER_PREFERENCES     = "User Preferences";
 
     /*2019-01-30, Clare
 1.Type:video/avc is video software codec includes OMX.qcom.video.encoder.avc and OMX.google.h264.encoder

@@ -127,13 +127,16 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
 
     @Override
     public void startRecord(String filePath, SurfaceTexture previewSurTexture, int width, int height) {
+        if((_videoCodecInfos != null)&&(_audioCodecInfos != null)) {
+            createMuxer(filePath);
+            getPreferenceVideoCodecSettings();
+            getPreferenceAudioCodecSettings();
 
-        createMuxer(filePath);
-        getPreferenceVideoCodecSettings();
-        getPreferenceAudioCodecSettings();
-
-        startVideoRecord(previewSurTexture, width, height);
-        startAudioRecord();
+            startVideoRecord(previewSurTexture, width, height);
+            startAudioRecord();
+        } else {
+            Log.i("####","not ready!!!!!!");
+        }
     }
 
     private void getPreferenceAudioCodecSettings() {
@@ -466,10 +469,21 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     public void separateCodecs(String formatType) {
         if(formatType.contains(VIDEO_TYPE)){
             _selectedVideoFormat = formatType;
+            _videoCodecInfos = _encodeFinder.findEncodersByType(_selectedVideoFormat);
+            if(_videoCodecInfos != null)
+                _viewCallback.isVideoSettingAllowed(true);
+            else
+                _viewCallback.isVideoSettingAllowed(false);
         } else if(formatType.contains(AUDIO_TYPE)){
             _selectedAudioFormat  = formatType;
+            _audioCodecInfos = _encodeFinder.findEncodersByType(_selectedAudioFormat);
+            if(_audioCodecInfos != null)
+                _viewCallback.isAudioSettingAllowed(true);
+            else
+                _viewCallback.isAudioSettingAllowed(false);
         }
-        _encodeFinder.startEncoderFinder(formatType);
+
+//        _encodeFinder.startEncoderFinder(formatType);
     }
 
 

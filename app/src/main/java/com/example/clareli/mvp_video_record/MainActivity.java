@@ -107,8 +107,8 @@ public class MainActivity extends AppCompatActivity implements IViewCallback, Pr
         //2019-01-20,Clare
         // it needs presenter object, so after initialize _presenterControl
         setupSurfaceTextureListener();
-        //user will decide which codec type
         _presenterControl.findAllSupportedCodecs();
+        //user will decide which codec type
         _presenterControl.separateCodecs(VIDEO_AVC);
         _presenterControl.separateCodecs(AUDIO_AAC);
     }
@@ -209,7 +209,6 @@ public class MainActivity extends AppCompatActivity implements IViewCallback, Pr
     public void isVideoCodecSettingAllowed(boolean result) {
         isGetVideoCodecInfo = result;
         if(result == true){
-            Toast.makeText(this, "video Codec ok", Toast.LENGTH_SHORT).show();
             isRecordReady();
         }
     }
@@ -219,7 +218,6 @@ public class MainActivity extends AppCompatActivity implements IViewCallback, Pr
     public void isAudioCodecSettingAllowed(boolean result) {
         isGetAudioCodecInfo = result;
         if(result == true){
-            Toast.makeText(this, "audio Codec ok", Toast.LENGTH_SHORT).show();
             isRecordReady();
         }
     }

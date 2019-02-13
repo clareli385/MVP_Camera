@@ -2,7 +2,6 @@ package com.example.clareli.mvp_video_record.Model;
 
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
-import android.os.AsyncTask;
 import android.util.Log;
 import android.util.SparseArray;
 
@@ -14,9 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.example.clareli.mvp_video_record.Util.IConstant.AUDIO_TYPE;
 import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_AVC;
-import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_TYPE;
 
 public class LUEncodeFinder {
     private LUPresenterCallback _presenterCallback;
@@ -31,39 +28,6 @@ public class LUEncodeFinder {
     public LUEncodeFinder(LUPresenterCallback callback) {
         _presenterCallback = callback;
         separateMediaCodecList();
-    }
-
-    public void startEncoderFinder(String formatType) {
-        new EncoderFinder().execute(formatType);
-    }
-
-    private class EncoderFinder extends AsyncTask<String, Void, MediaCodecInfo[]> {
-
-        @Override
-        protected MediaCodecInfo[] doInBackground(String... formatTypes) {
-            return findEncodersByType(formatTypes[0]);
-        }
-
-        @Override
-        protected void onPostExecute(MediaCodecInfo[] infos) {
-            if(infos != null) {
-                for (int i = 0; i < infos.length; i++) {
-                    //to check the onPostExecute is for audio or video
-                    if(Arrays.toString(infos[i].getSupportedTypes()).contains(AUDIO_TYPE)){
-                        _presenterCallback.findAudioEncodeResult(infos);
-                        break;
-                    }
-                    if(Arrays.toString(infos[i].getSupportedTypes()).contains(VIDEO_TYPE)){
-                        _presenterCallback.findVideoEncodeResult(infos);
-                        break;
-                    }
-
-                }
-            }
-
-        }
-
-
     }
 
     public MediaCodecInfo[] findEncodersByType(String formatType) {

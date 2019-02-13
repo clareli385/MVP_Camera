@@ -42,5 +42,8 @@ public interface IConstant {
     public final String ENCODEC_VIDEO_COLOR_FORMAT  = "colorFormat";
     public final String ENCODEC_VIDEO_SELECTED_RECORD = "video_selected_record";
     public final String ENCODEC_AUDIO_SELECTED_RECORD = "audio_selected_record";
+    public final String VIDEO_TYPE                  = "video";
+    public final String AUDIO_TYPE                  = "audio";
+
 
 }

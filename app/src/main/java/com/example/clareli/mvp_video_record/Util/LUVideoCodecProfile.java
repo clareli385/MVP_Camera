@@ -5,6 +5,8 @@ import android.media.MediaCodecInfo;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.example.clareli.mvp_video_record.Model.LUEncodeFinder.avcProfileLevelToString;
+import static com.example.clareli.mvp_video_record.Model.LUEncodeFinder.toProfileLevel;
 import static com.example.clareli.mvp_video_record.Util.IConstant.ENCODEC_NAME;
 import static com.example.clareli.mvp_video_record.Util.IConstant.ENCODEC_PROFILE_LEVEL;
 import static com.example.clareli.mvp_video_record.Util.IConstant.ENCODEC_VIDEO_BIT_RATE;
@@ -14,8 +16,7 @@ import static com.example.clareli.mvp_video_record.Util.IConstant.ENCODEC_VIDEO_
 import static com.example.clareli.mvp_video_record.Util.IConstant.ENCODEC_VIDEO_TYPE;
 import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_HEIGHT;
 import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_WIDTH;
-import static com.example.clareli.mvp_video_record.Util.LUEncodeFinder.avcProfileLevelToString;
-import static com.example.clareli.mvp_video_record.Util.LUEncodeFinder.toProfileLevel;
+
 
 /*2019-02-11,Clare
 This class is for read audio codec spec lists after app started

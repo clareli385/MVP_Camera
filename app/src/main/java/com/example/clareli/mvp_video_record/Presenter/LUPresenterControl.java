@@ -29,10 +29,10 @@ import com.example.clareli.mvp_video_record.Model.LURecordedAudio;
 import com.example.clareli.mvp_video_record.Util.LUAudioCodecInfo;
 import com.example.clareli.mvp_video_record.Util.LUAudioCodecProfile;
 import com.example.clareli.mvp_video_record.Util.LUBasicUtility;
-import com.example.clareli.mvp_video_record.Util.LUEncodeFinder;
+import com.example.clareli.mvp_video_record.Model.LUEncodeFinder;
 import com.example.clareli.mvp_video_record.Util.LUVideoCodecInfo;
 import com.example.clareli.mvp_video_record.Util.LUVideoCodecProfile;
-import com.example.clareli.mvp_video_record.View.LUViewErrorCallback;
+import com.example.clareli.mvp_video_record.View.LUViewCallback;
 
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
@@ -44,12 +44,12 @@ import java.util.Map;
 
 import static android.media.MediaCodec.BUFFER_FLAG_END_OF_STREAM;
 import static android.media.MediaCodec.BUFFER_FLAG_KEY_FRAME;
-import static com.example.clareli.mvp_video_record.Util.IConstant.AUDIO_AAC;
 import static com.example.clareli.mvp_video_record.Util.IConstant.AUDIO_GOOGLE_AAC_ENCODER;
+import static com.example.clareli.mvp_video_record.Util.IConstant.AUDIO_TYPE;
 import static com.example.clareli.mvp_video_record.Util.IConstant.ENCODEC_AUDIO_SELECTED_RECORD;
 import static com.example.clareli.mvp_video_record.Util.IConstant.ENCODEC_VIDEO_SELECTED_RECORD;
-import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_AVC;
 import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_GOOGLE_H264_ENCODER;
+import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_TYPE;
 import static com.example.clareli.mvp_video_record.Util.LUAudioCodecProfile.mapToAudioProfile;
 import static com.example.clareli.mvp_video_record.Util.LUVideoCodecProfile.mapToVideoProfile;
 
@@ -59,7 +59,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     private LUICamera _camera;
     private LUPresenterCallback _presenterCallback;
     private Object _systemService;
-    private LUViewErrorCallback _LU_viewErrorCallback;
+    private LUViewCallback _viewCallback;
     private CameraDevice _cameraDevice;
     private LUIEncodedVideo _encodedVideo;
     private LUIMuxer _muxer;
@@ -75,17 +75,17 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     private String selectedAudioCodecName;
     private LUAudioCodecProfile audioCodecProfileAAC;
     private LUVideoCodecProfile videoCodecProfile;  //H264
-    private String _selectedVideoMimeType;
-    private String _selectedAudioMimeType;
+    private String _selectedVideoFormat;
+    private String _selectedAudioFormat;
     private LUBasicUtility _utility;
-
+    private LUEncodeFinder _encodeFinder;
 
     //constructor
-    public LUPresenterControl(Activity activity, LUViewErrorCallback LUViewErrorCallback) {
+    public LUPresenterControl(Activity activity, LUViewCallback LUViewCallback) {
         _messageViewReference = new WeakReference<>(activity);
         _presenterCallback = new LUPresenterCallback(this);
         _camera = new LUCameraClass(_presenterCallback);
-        _LU_viewErrorCallback = LUViewErrorCallback;
+        _viewCallback = LUViewCallback;
         _encodedVideo = new LUEncodedVideo(_presenterCallback);
         _recordedAudio = new LURecordedAudio(_presenterCallback);
         _encodedAudio = new LUEncodedAudio(_presenterCallback);
@@ -163,25 +163,25 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
             setSelectedVideoCodecName(VIDEO_GOOGLE_H264_ENCODER);
             MediaCodecInfo mediaCodecInfo = getVideoCodecInfo(getSelectedVideoCodecName());
             if (mediaCodecInfo == null) {
-                _LU_viewErrorCallback.viewShowErrorDialog("Cannot get Video Codec Info!");
+                _viewCallback.viewShowErrorDialog("Cannot get Video Codec Info!");
                 return;
             }
-            LUVideoCodecInfo videoCodecInfo = toVideoCodecInfo(mediaCodecInfo, _selectedVideoMimeType);
+            LUVideoCodecInfo videoCodecInfo = toVideoCodecInfo(mediaCodecInfo, _selectedVideoFormat);
             colorFormat = videoCodecInfo.getColorFormats()[videoCodecInfo.getColorFormats().length - 1];
             videoBitrate = videoCodecInfo.getBitRatesMax();
             videoFrameRates = 30;
 
-            videoCodecProfile = new LUVideoCodecProfile(getSelectedVideoCodecName(), _selectedVideoMimeType,
+            videoCodecProfile = new LUVideoCodecProfile(getSelectedVideoCodecName(), _selectedVideoFormat,
                     colorFormat, videoBitrate,
                     videoFrameRates, 5, 1920, 1080, videoCodecInfo.getProfileLevels()[videoCodecInfo.getProfileLevels().length - 1]);
             if (isVideoCodecSettingAvailable(videoCodecProfile) == true) {
                 Map<String, String> videoSelectedCodec = videoCodecProfile.videoProfileToMap();
                 if (_utility.saveMapToPreference(ENCODEC_VIDEO_SELECTED_RECORD, videoSelectedCodec) == false) {
-                    _LU_viewErrorCallback.viewShowErrorDialog("Cannot save Video Codec!");
+                    _viewCallback.viewShowErrorDialog("Cannot save Video Codec!");
                 }
 
             } else {
-                _LU_viewErrorCallback.viewShowErrorDialog("Video Codec settings are invalid!");
+                _viewCallback.viewShowErrorDialog("Video Codec settings are invalid!");
             }
 
         }
@@ -192,7 +192,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
             _camera.closePreviewSession();
             _previewSurTexture = previewSurTexture;
             if (_previewSurTexture == null) {
-                _LU_viewErrorCallback.viewShowErrorDialog("preview SurTexture is null fail!");
+                _viewCallback.viewShowErrorDialog("preview SurTexture is null fail!");
                 return;
             }
             _previewSurTexture.setDefaultBufferSize(width, height);
@@ -221,10 +221,10 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
             setSelectedAudioCodecName(AUDIO_GOOGLE_AAC_ENCODER);
             MediaCodecInfo mediaCodecInfo = getAudioCodecInfo(getSelectedAudioCodecName());
             if (mediaCodecInfo == null) {
-                _LU_viewErrorCallback.viewShowErrorDialog("Cannot get Audio Codec Info!");
+                _viewCallback.viewShowErrorDialog("Cannot get Audio Codec Info!");
                 return;
             }
-            LUAudioCodecInfo audioCodecInfo = toAudioCodecInfo(mediaCodecInfo, _selectedAudioMimeType);
+            LUAudioCodecInfo audioCodecInfo = toAudioCodecInfo(mediaCodecInfo, _selectedAudioFormat);
 
             bitRate = audioCodecInfo.getBitRatesMax();
             lengthSampleRate = audioCodecInfo.getSampleRates().length;
@@ -232,18 +232,18 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
             bufferSize = AudioRecord.getMinBufferSize(sampleRateInHz,
                     channelConfig, encodingBit) * audio_buffer_times;
 
-            audioCodecProfileAAC = new LUAudioCodecProfile(getSelectedAudioCodecName(), _selectedAudioMimeType,
+            audioCodecProfileAAC = new LUAudioCodecProfile(getSelectedAudioCodecName(), _selectedAudioFormat,
                     sampleRateInHz, channelCount, bitRate, MediaCodecInfo.CodecProfileLevel.AACObjectLC, bufferSize);
 
             if (isAudioCodecSettingAvailable(audioCodecProfileAAC)) {
 
                 Map<String, String> audioSelectedCodec = audioCodecProfileAAC.audioProfileToMap();
                 if (_utility.saveMapToPreference(ENCODEC_AUDIO_SELECTED_RECORD, audioSelectedCodec) == false) {
-                    _LU_viewErrorCallback.viewShowErrorDialog("Cannot save Audio Codec!");
+                    _viewCallback.viewShowErrorDialog("Cannot save Audio Codec!");
                 }
 
             } else {
-                _LU_viewErrorCallback.viewShowErrorDialog("Audio Codec settings are invalid!");
+                _viewCallback.viewShowErrorDialog("Audio Codec settings are invalid!");
             }
 
         } else {
@@ -264,12 +264,12 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
                 }
 
             } else {
-                _LU_viewErrorCallback.viewShowErrorDialog("audio Record Start fail!");
+                _viewCallback.viewShowErrorDialog("audio Record Start fail!");
 
             }
 
         } else {
-            _LU_viewErrorCallback.viewShowErrorDialog("audio Record encoded fail!");
+            _viewCallback.viewShowErrorDialog("audio Record encoded fail!");
         }
 
     }
@@ -322,7 +322,6 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
             _muxer = new LUMuxer(dstPath, saveOutputFormat, _presenterCallback);
         }
     }
-
 
     @Override
     public void stopMuxer() {
@@ -459,26 +458,40 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     ////////////////find all supported video codecs spec for "video/avc"、"audio/aac" //////////
 
     @Override
-    public void findSupportedCodecs() {
-        LUEncodeFinder luEncodeFinder = new LUEncodeFinder(_presenterCallback);
-        _selectedVideoMimeType = VIDEO_AVC;
-        luEncodeFinder.startEncoderFinder(_selectedVideoMimeType);
-        _selectedAudioMimeType = AUDIO_AAC;
-        luEncodeFinder.startEncoderFinder(_selectedAudioMimeType);
+    public void findAllSupportedCodecs() {
+        _encodeFinder = new LUEncodeFinder(_presenterCallback);
+    }
+
+    @Override
+    public void separateCodecs(String formatType) {
+        if(formatType.contains(VIDEO_TYPE)){
+            _selectedVideoFormat = formatType;
+        } else if(formatType.contains(AUDIO_TYPE)){
+            _selectedAudioFormat  = formatType;
+        }
+        _encodeFinder.startEncoderFinder(formatType);
     }
 
 
     @Override
     public void getVideoEncodeResult(MediaCodecInfo[] infos) {
-        _videoCodecInfos = infos;
-        LUEncodeFinder.logCodecInfos(infos, _selectedVideoMimeType);
+        if((infos != null) && (infos.length > 0)) {
+            _videoCodecInfos = infos;
+            _viewCallback.isVideoSettingAllowed(true);
+            //just show the original content
+            LUEncodeFinder.logCodecInfos(infos, _selectedVideoFormat);
+        }
     }
 
     ////////////////find all supported video codecs spec for "audio/mp4a-latm" //////////
     @Override
     public void getAudioEncodeResult(MediaCodecInfo[] infos) {
-        _audioCodecInfos = infos;
-        LUEncodeFinder.logCodecInfos(infos, _selectedAudioMimeType);
+        if((infos != null) && (infos.length > 0)) {
+            _audioCodecInfos = infos;
+            _viewCallback.isAudioSettingAllowed(true);
+            //just show the original content
+            LUEncodeFinder.logCodecInfos(infos, _selectedAudioFormat);
+        }
     }
 
     private void setSelectedVideoCodecName(String videoCodecName) {
@@ -502,7 +515,9 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     private MediaCodecInfo getVideoCodecInfo(String codecName) {
         if (codecName == null) return null;
         if (_videoCodecInfos == null) {
-            _videoCodecInfos = LUEncodeFinder.findEncodersByType(_selectedVideoMimeType);
+            if(_encodeFinder.getEncoderInfos() != null) {
+                _videoCodecInfos = _encodeFinder.findEncodersByType(_selectedVideoFormat);
+            }
         }
         MediaCodecInfo tempInfo = null;
         for (int i = 0; i < _videoCodecInfos.length; i++) {
@@ -519,7 +534,9 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     private MediaCodecInfo getAudioCodecInfo(String codecName) {
         if (codecName == null) return null;
         if (_audioCodecInfos == null) {
-            _audioCodecInfos = LUEncodeFinder.findEncodersByType(_selectedAudioMimeType);
+            if(_encodeFinder.getEncoderInfos() != null) {
+                _audioCodecInfos = _encodeFinder.findEncodersByType(_selectedAudioFormat);
+            }
         }
         MediaCodecInfo codec = null;
         for (int i = 0; i < _audioCodecInfos.length; i++) {
@@ -582,19 +599,19 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
         String codecName = getSelectedVideoCodecName();
         MediaCodecInfo codec = getVideoCodecInfo(codecName);
         if (codec == null) return false;
-        MediaCodecInfo.CodecCapabilities capabilities = codec.getCapabilitiesForType(_selectedVideoMimeType);
+        MediaCodecInfo.CodecCapabilities capabilities = codec.getCapabilitiesForType(_selectedVideoFormat);
         MediaCodecInfo.VideoCapabilities videoCapabilities = capabilities.getVideoCapabilities();
         if (!videoCapabilities.isSizeSupported(videoCodecSettings.getWidth(), videoCodecSettings.getHeight())) {
-            _LU_viewErrorCallback.viewShowErrorDialog("Video Codec width and height are not supported!");
+            _viewCallback.viewShowErrorDialog("Video Codec width and height are not supported!");
             return false;
         }
 
         if (!videoCapabilities.areSizeAndRateSupported(videoCodecSettings.getWidth(), videoCodecSettings.getHeight(), videoCodecSettings.getVideoFrameRates())) {
-            _LU_viewErrorCallback.viewShowErrorDialog("Video Codec frameRates is not supported!");
+            _viewCallback.viewShowErrorDialog("Video Codec frameRates is not supported!");
             return false;
         }
         if (!videoCapabilities.getBitrateRange().contains(videoCodecSettings.getVideoBitrate())) {
-            _LU_viewErrorCallback.viewShowErrorDialog("Video Codec bitrate is not supported!");
+            _viewCallback.viewShowErrorDialog("Video Codec bitrate is not supported!");
             return false;
         }
         MediaCodecInfo.CodecProfileLevel[] profiles = capabilities.profileLevels;
@@ -605,7 +622,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
             }
         }
         if (result == false) {
-            _LU_viewErrorCallback.viewShowErrorDialog("Video Codec profileLevel is not supported!");
+            _viewCallback.viewShowErrorDialog("Video Codec profileLevel is not supported!");
             return false;
         }
 
@@ -618,7 +635,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
         }
 
         if (result == false) {
-            _LU_viewErrorCallback.viewShowErrorDialog("Video Codec color Formats is not supported!");
+            _viewCallback.viewShowErrorDialog("Video Codec color Formats is not supported!");
         }
         return result;
 
@@ -630,18 +647,18 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
         String codecName = getSelectedAudioCodecName();
         MediaCodecInfo codec = getAudioCodecInfo(codecName);
         if (codec == null) return false;
-        MediaCodecInfo.CodecCapabilities capabilities = codec.getCapabilitiesForType(_selectedAudioMimeType);
+        MediaCodecInfo.CodecCapabilities capabilities = codec.getCapabilitiesForType(_selectedAudioFormat);
         MediaCodecInfo.AudioCapabilities audioCapabilities = capabilities.getAudioCapabilities();
         if (!audioCapabilities.isSampleRateSupported(audioCodecProfile.getSampleRate())) {
-            _LU_viewErrorCallback.viewShowErrorDialog("Audio Codec sampleRate is not supported!");
+            _viewCallback.viewShowErrorDialog("Audio Codec sampleRate is not supported!");
             return false;
         }
         if (!audioCapabilities.getBitrateRange().contains(audioCodecProfile.getBitRate())) {
-            _LU_viewErrorCallback.viewShowErrorDialog("Audio Codec bitRate is not supported!");
+            _viewCallback.viewShowErrorDialog("Audio Codec bitRate is not supported!");
             return false;
         }
         if (audioCodecProfile.getChannelCount() > audioCapabilities.getMaxInputChannelCount()) {
-            _LU_viewErrorCallback.viewShowErrorDialog("Audio Codec channel count is over!");
+            _viewCallback.viewShowErrorDialog("Audio Codec channel count is over!");
             return false;
         }
 
@@ -651,32 +668,32 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     //////////////////////////////error msg//////////////////////////////
     @Override
     public void errorCameraCallback(String msg) {
-        _LU_viewErrorCallback.viewShowErrorDialog(msg);
+        _viewCallback.viewShowErrorDialog(msg);
     }
 
     @Override
     public void muxerErrorCallback(String msg) {
         Log.i(TAG, msg);
-        _LU_viewErrorCallback.viewShowErrorDialog(msg);
+        _viewCallback.viewShowErrorDialog(msg);
     }
 
     @Override
     public void encodedVideoErrorCallback(String msg) {
         Log.i(TAG, msg);
-        _LU_viewErrorCallback.viewShowErrorDialog(msg);
+        _viewCallback.viewShowErrorDialog(msg);
 
     }
 
     @Override
     public void encodedAudioErrorCallback(String msg) {
         Log.i(TAG, msg);
-        _LU_viewErrorCallback.viewShowErrorDialog(msg);
+        _viewCallback.viewShowErrorDialog(msg);
     }
 
     @Override
     public void recordedAudioErrorCallback(String msg) {
         Log.i(TAG, msg);
-        _LU_viewErrorCallback.viewShowErrorDialog(msg);
+        _viewCallback.viewShowErrorDialog(msg);
     }
 
     private class Queue {

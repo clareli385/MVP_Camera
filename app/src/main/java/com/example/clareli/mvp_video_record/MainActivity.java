@@ -2,6 +2,7 @@ package com.example.clareli.mvp_video_record;
 
 import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
+import android.net.Uri;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -11,12 +12,15 @@ import android.util.Log;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.example.clareli.mvp_video_record.Presenter.IPresenterControl;
 import com.example.clareli.mvp_video_record.Presenter.LUPresenterControl;
 import com.example.clareli.mvp_video_record.View.AutoFitTextureView;
-import com.example.clareli.mvp_video_record.View.IViewErrorCallback;
-import com.example.clareli.mvp_video_record.View.LUViewErrorCallback;
+import com.example.clareli.mvp_video_record.View.IViewCallback;
+import com.example.clareli.mvp_video_record.View.LUViewCallback;
+import com.example.clareli.mvp_video_record.View.ProgressbarDialog;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -25,11 +29,13 @@ import java.util.Date;
 import static android.Manifest.permission.CAMERA;
 import static android.Manifest.permission.RECORD_AUDIO;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
+import static com.example.clareli.mvp_video_record.Util.IConstant.AUDIO_AAC;
 import static com.example.clareli.mvp_video_record.Util.IConstant.REQUEST_PERMISSION_CODE;
 import static com.example.clareli.mvp_video_record.Util.IConstant.RECORD_PERMISSIONS;
+import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_AVC;
 import static com.example.clareli.mvp_video_record.Util.LUPermissionCheck.hasPermissionsGranted;
 
-public class MainActivity extends AppCompatActivity implements IViewErrorCallback {
+public class MainActivity extends AppCompatActivity implements IViewCallback, ProgressbarDialog.OnFragmentInteractionListener {
     private AutoFitTextureView _textureView;
     private String TAG = "MainActivity";
     private Button _recordStartBtn;
@@ -39,9 +45,12 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     private String _filePath = null;
     private File _fileRecord = null;
     private boolean _isRecordingVideo = false;
-    private LUViewErrorCallback _viewErrorCallback;
+    private LUViewCallback _viewErrorCallback;
     private TextureView.SurfaceTextureListener _surfaceTextureListener;
     private View.OnClickListener _recordClickListener;
+    private boolean isGetVideoCodecInfo = false;
+    private boolean isGetAudioCodecInfo = false;
+    private ProgressbarDialog _progressbarDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,6 +89,7 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     public void findViews() {
         _textureView = findViewById(R.id.texture);
         _recordStartBtn = findViewById(R.id.record_btn);
+        _progressbarDialog = ProgressbarDialog.newInstance("wait....","");
         setupButtonClickListener();
         _recordStartBtn.setOnClickListener(_recordClickListener);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
@@ -90,12 +100,17 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     }
 
     public void initPresenter() {
-        _viewErrorCallback = new LUViewErrorCallback(this);
+        _viewErrorCallback = new LUViewCallback(this);
         _presenterControl = new LUPresenterControl(this, _viewErrorCallback);
+        _progressbarDialog.setMessage("please wait.");
+        _progressbarDialog.show(getSupportFragmentManager().beginTransaction(), ProgressbarDialog.class.getSimpleName());
         //2019-01-20,Clare
         // it needs presenter object, so after initialize _presenterControl
         setupSurfaceTextureListener();
-        _presenterControl.findSupportedCodecs();
+        //user will decide which codec type
+        _presenterControl.findAllSupportedCodecs();
+        _presenterControl.separateCodecs(VIDEO_AVC);
+        _presenterControl.separateCodecs(AUDIO_AAC);
     }
 
     public void setupButtonClickListener(){
@@ -188,4 +203,35 @@ public class MainActivity extends AppCompatActivity implements IViewErrorCallbac
     public void showErrorMsg(String msg) {
         Log.i(TAG, "!!!error:" + msg);
     }
+
+    //video codec can be selected
+    @Override
+    public void isVideoCodecSettingAllowed(boolean result) {
+        isGetVideoCodecInfo = result;
+        if(result == true){
+            Toast.makeText(this, "video Codec ok", Toast.LENGTH_SHORT).show();
+            isRecordReady();
+        }
+    }
+
+    //audio codec can be selected
+    @Override
+    public void isAudioCodecSettingAllowed(boolean result) {
+        isGetAudioCodecInfo = result;
+        if(result == true){
+            Toast.makeText(this, "audio Codec ok", Toast.LENGTH_SHORT).show();
+            isRecordReady();
+        }
+    }
+
+    public void isRecordReady(){
+        if(isGetAudioCodecInfo && isGetVideoCodecInfo) {
+            _recordStartBtn.setEnabled(true);
+            _progressbarDialog.dismiss();
+
+        } else {
+            _recordStartBtn.setEnabled(false);
+        }
+    }
+
 }

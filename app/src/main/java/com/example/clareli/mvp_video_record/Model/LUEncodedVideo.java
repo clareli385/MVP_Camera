@@ -5,7 +5,6 @@ import android.media.MediaFormat;
 import android.view.Surface;
 
 import com.example.clareli.mvp_video_record.Presenter.LUPresenterCallback;
-import com.example.clareli.mvp_video_record.Util.LUEncodeFinder;
 import com.example.clareli.mvp_video_record.Util.LUVideoCodecProfile;
 
 

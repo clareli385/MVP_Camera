@@ -1,4 +1,4 @@
-package com.example.clareli.mvp_video_record.Util;
+package com.example.clareli.mvp_video_record.Model;
 
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
@@ -14,9 +14,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.example.clareli.mvp_video_record.Util.IConstant.AUDIO_SUPPORT_CODEC_NAME;
+import static com.example.clareli.mvp_video_record.Util.IConstant.AUDIO_TYPE;
 import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_AVC;
-import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_SUPPORT_CODEC_NAME;
+import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_TYPE;
 
 public class LUEncodeFinder {
     private LUPresenterCallback _presenterCallback;
@@ -24,57 +24,88 @@ public class LUEncodeFinder {
     static SparseArray<String> sAVCProfiles = new SparseArray<>();
     static SparseArray<String> sAVCLevels = new SparseArray<>();
 
+    static List<MediaCodecInfo> encoderInfos = new ArrayList<>();
+    static List<MediaCodecInfo> decoderInfos = new ArrayList<>();
+
+
     public LUEncodeFinder(LUPresenterCallback callback) {
         _presenterCallback = callback;
+        separateMediaCodecList();
     }
 
-    public void startEncoderFinder(String mimeType) {
-        new EncoderFinder().execute(mimeType);
+    public void startEncoderFinder(String formatType) {
+        new EncoderFinder().execute(formatType);
     }
 
     private class EncoderFinder extends AsyncTask<String, Void, MediaCodecInfo[]> {
 
         @Override
-        protected MediaCodecInfo[] doInBackground(String... mimeTypes) {
-            return findEncodersByType(mimeTypes[0]);
+        protected MediaCodecInfo[] doInBackground(String... formatTypes) {
+            return findEncodersByType(formatTypes[0]);
         }
 
         @Override
         protected void onPostExecute(MediaCodecInfo[] infos) {
+            if(infos != null) {
+                for (int i = 0; i < infos.length; i++) {
+                    //to check the onPostExecute is for audio or video
+                    if(Arrays.toString(infos[i].getSupportedTypes()).contains(AUDIO_TYPE)){
+                        _presenterCallback.findAudioEncodeResult(infos);
+                        break;
+                    }
+                    if(Arrays.toString(infos[i].getSupportedTypes()).contains(VIDEO_TYPE)){
+                        _presenterCallback.findVideoEncodeResult(infos);
+                        break;
+                    }
 
-            for (int i = 0; i < infos.length; i++) {
-                if (infos[i].getName().contains(AUDIO_SUPPORT_CODEC_NAME)) {
-                    _presenterCallback.findAudioEncodeResult(infos);
-                    break;
-                } else if(infos[i].getName().contains(VIDEO_SUPPORT_CODEC_NAME)){
-                    _presenterCallback.findVideoEncodeResult(infos);
-                    break;
                 }
             }
+
         }
 
 
     }
 
-    static public MediaCodecInfo[] findEncodersByType(String mimeType) {
+    public MediaCodecInfo[] findEncodersByType(String formatType) {
 
-        MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
+        if((encoderInfos == null) || (encoderInfos.size() <= 0)) {
+            _presenterCallback.errorPreview("Cannot find encoder lists");
+            return null;
+        }
         List<MediaCodecInfo> infos = new ArrayList<>();
+        for(int i =0; i < encoderInfos.size(); i++){
+            try {
+                MediaCodecInfo.CodecCapabilities cap = encoderInfos.get(i).getCapabilitiesForType(formatType);
+                if (cap != null)
+                    infos.add(encoderInfos.get(i));
+            }catch (IllegalArgumentException e){
+                continue;
+            }
+        }
+        return infos.toArray(new MediaCodecInfo[infos.size()]);
+    }
+
+    /*
+    * 2019-02-11, Clare
+    * To separate  Encoder and Decoder */
+    public static void separateMediaCodecList(){
+        MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
         for (MediaCodecInfo info : codecList.getCodecInfos()) {
             if (!info.isEncoder()) {
-                continue;
+                decoderInfos.add(info);
+            } else {
+                encoderInfos.add(info);
             }
-            try {
-                MediaCodecInfo.CodecCapabilities cap = info.getCapabilitiesForType(mimeType);
-                if (cap == null) continue;
-            } catch (IllegalArgumentException e) {
-                // unsupported
-                continue;
-            }
-            infos.add(info);
         }
 
-        return infos.toArray(new MediaCodecInfo[infos.size()]);
+    }
+
+    public List<MediaCodecInfo> getEncoderInfos(){
+        return encoderInfos;
+    }
+
+    public List<MediaCodecInfo> getDecoderInfos(){
+        return decoderInfos;
     }
 
     /**
@@ -115,7 +146,7 @@ public class LUEncodeFinder {
         return profiles;
     }
 
-    static MediaCodecInfo.CodecProfileLevel toProfileLevel(String str) {
+    public static MediaCodecInfo.CodecProfileLevel toProfileLevel(String str) {
         if (sAVCProfiles.size() == 0 || sAVCLevels.size() == 0 || sAACProfiles.size() == 0) {
             initProfileLevels();
         }

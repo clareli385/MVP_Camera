@@ -2,7 +2,9 @@ package com.example.clareli.mvp_video_record;
 
 import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
-import android.net.Uri;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
+import android.media.MediaCodecInfo;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -12,11 +14,13 @@ import android.util.Log;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ProgressBar;
-import android.widget.Toast;
 
 import com.example.clareli.mvp_video_record.Presenter.IPresenterControl;
 import com.example.clareli.mvp_video_record.Presenter.LUPresenterControl;
+import com.example.clareli.mvp_video_record.Util.LUAudioCodecInfo;
+import com.example.clareli.mvp_video_record.Util.LUAudioCodecProfile;
+import com.example.clareli.mvp_video_record.Util.LUVideoCodecInfo;
+import com.example.clareli.mvp_video_record.Util.LUVideoCodecProfile;
 import com.example.clareli.mvp_video_record.View.AutoFitTextureView;
 import com.example.clareli.mvp_video_record.View.IViewCallback;
 import com.example.clareli.mvp_video_record.View.LUViewCallback;
@@ -30,9 +34,11 @@ import static android.Manifest.permission.CAMERA;
 import static android.Manifest.permission.RECORD_AUDIO;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static com.example.clareli.mvp_video_record.Util.IConstant.AUDIO_AAC;
+import static com.example.clareli.mvp_video_record.Util.IConstant.AUDIO_GOOGLE_AAC_ENCODER;
 import static com.example.clareli.mvp_video_record.Util.IConstant.REQUEST_PERMISSION_CODE;
 import static com.example.clareli.mvp_video_record.Util.IConstant.RECORD_PERMISSIONS;
 import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_AVC;
+import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_GOOGLE_H264_ENCODER;
 import static com.example.clareli.mvp_video_record.Util.LUPermissionCheck.hasPermissionsGranted;
 
 public class MainActivity extends AppCompatActivity implements IViewCallback, ProgressbarDialog.OnFragmentInteractionListener {
@@ -51,6 +57,9 @@ public class MainActivity extends AppCompatActivity implements IViewCallback, Pr
     private boolean isGetVideoCodecInfo = false;
     private boolean isGetAudioCodecInfo = false;
     private ProgressbarDialog _progressbarDialog;
+    private LUVideoCodecInfo videoCodecInfo;
+    private LUAudioCodecInfo audioCodecInfo;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,6 +70,27 @@ public class MainActivity extends AppCompatActivity implements IViewCallback, Pr
 
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if(_presenterControl.getPreferenceAudioCodecSettings() == false){
+            //ask presenter to get video codec info ranges for UI
+            videoCodecInfo = _presenterControl.getVideoCodecInfoRangeByName(VIDEO_GOOGLE_H264_ENCODER);
+            //for test to set the default value
+            if(videoCodecInfo != null)
+                _presenterControl.createDefaultVideoCodecSelection(videoCodecInfo);
+
+        }
+        if(_presenterControl.getPreferenceVideoCodecSettings() == false) {
+            //ask presenter to get audio codec info ranges for UI
+            audioCodecInfo = _presenterControl.getAudioCodecInfoRangeByName(AUDIO_GOOGLE_AAC_ENCODER);
+            //for test to set the default value
+            if(audioCodecInfo != null) {
+                _presenterControl.createDefaultAudioCodecSelection(audioCodecInfo);
+            }
+
+        }
+    }
 
     @Override
     protected void onResume() {
@@ -113,6 +143,59 @@ public class MainActivity extends AppCompatActivity implements IViewCallback, Pr
         _presenterControl.separateCodecs(AUDIO_AAC);
     }
 
+    public boolean getUIAudioCodecSettings() {
+        /*****************collect UI settings to transfer to audioCodecProfile*****************/
+        boolean result = true;
+
+        String codecName;
+        String audioFormat;
+        int channelConfig = AudioFormat.CHANNEL_IN_STEREO;//AudioFormat.CHANNEL_IN_MONO;
+        int encodingBit = AudioFormat.ENCODING_PCM_16BIT;
+        int audio_buffer_times = 1;
+        int channelCount = 2;
+        int bitRate = 8000;
+        int profileLevel = MediaCodecInfo.CodecProfileLevel.AACObjectLC;    //cannot get from supported Audio Codec Info
+        int sampleRateInHz = 44100;
+        int bufferSize = AudioRecord.getMinBufferSize(sampleRateInHz,
+                channelConfig, encodingBit) * audio_buffer_times;
+
+        LUAudioCodecProfile tempCodecProfile = new LUAudioCodecProfile();
+        /****************to be continue****************** */
+
+        if(_presenterControl.isAudioCodecSettingAvailable(tempCodecProfile)){
+
+        }
+
+        return result;
+
+    }
+
+    public boolean getUIVideoCodecSettings() {
+        /*****************collect UI settings to transfer to audioCodecProfile*****************/
+        boolean result = true;
+        String codecName;
+        String videoFormat;
+        int colorFormat;
+        int videoBitrate;
+        int videoFrameRates = 30;
+        int iFrameInterval = 5;
+        int width;
+        int height;
+        MediaCodecInfo.CodecProfileLevel profileLevel;
+
+        LUVideoCodecProfile tempCodecProfile = new LUVideoCodecProfile();
+        /****************to be continue****************** */
+
+        if(_presenterControl.isVideoCodecSettingAvailable(tempCodecProfile)){
+
+
+        }
+
+        return result;
+
+    }
+
+
     public void setupButtonClickListener(){
         _recordClickListener = new View.OnClickListener() {
             @Override
@@ -124,10 +207,13 @@ public class MainActivity extends AppCompatActivity implements IViewCallback, Pr
                             String format = simpleDateFormat.format(new Date());
                             String finalName = format+_fileName;
                             _fileRecord = new File(_filePath, finalName);
-
                             _isRecordingVideo = true;
-                            _recordStartBtn.setText("Stop");
-                            _presenterControl.startRecord(_fileRecord.getAbsolutePath(), _textureView.getSurfaceTexture(), _textureView.getWidth(), _textureView.getHeight());
+                            /*2019-02-13, Clare
+                            * check the video and audio settings are available*/
+                            if(getUIVideoCodecSettings() && getUIAudioCodecSettings()) {
+                                _recordStartBtn.setText("Stop");
+                                _presenterControl.startRecord(_fileRecord.getAbsolutePath(), _textureView.getSurfaceTexture(), _textureView.getWidth(), _textureView.getHeight());
+                            }
                         } else {
                             _isRecordingVideo = false;
                             _recordStartBtn.setText("Record");

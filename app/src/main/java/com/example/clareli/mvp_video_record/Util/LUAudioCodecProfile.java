@@ -36,6 +36,39 @@ public class LUAudioCodecProfile {
 
     }
 
+    public LUAudioCodecProfile(){
+
+    }
+
+    public void set_encodecName(String encodecName){
+        _encodecName = encodecName;
+    }
+
+    public void setEncodedAudioType(String encodedAudioType){
+        _encodedAudioType = encodedAudioType;
+    }
+
+    public void setSampleRate(int sampleRate){
+        _sampleRate = sampleRate;
+    }
+
+    public void setChannelCount(int channelCount){
+        _channelCount = channelCount;
+    }
+
+    public void setBitRate(int bitRate){
+        _bitRate = bitRate;
+    }
+
+    public void setProfileLevel(int profileLevel){
+        _profileLevel = profileLevel;
+    }
+
+    public void setMaxInputSize(int maxInputSize){
+        _maxInputSize = maxInputSize;
+    }
+
+
     public String getEncodedAudioType(){
         return _encodedAudioType;
     }

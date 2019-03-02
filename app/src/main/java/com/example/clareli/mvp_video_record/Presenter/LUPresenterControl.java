@@ -153,12 +153,15 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
             videoCodecProfile = mapToVideoProfile(videoSelectedMap);
         }
     }
+    /*2019-03-09, Clare
+    * using H264 software codec is ok*/
 
     public LUVideoCodecProfile createVideoDefaultCodecProfile(){
         int videoFrameRates = 30;
-        int width = 1920;
-        int height = 1080;
+        int width = 720;
+        int height = 480;
         int iFrameInterval = 5;
+        int videoBitrate = 1200000;
         LUVideoCodecProfile tempVideoCodecProfile;
         tempVideoCodecProfile = new LUVideoCodecProfile();
         tempVideoCodecProfile.setEncodedName(VIDEO_GOOGLE_H264_ENCODER);
@@ -171,7 +174,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
 
         tempVideoCodecProfile.setEncodedVideoType(_selectedVideoFormat);
         tempVideoCodecProfile.setColorFormat(videoCodecInfo.getColorFormats()[videoCodecInfo.getColorFormats().length - 1]);
-        tempVideoCodecProfile.setVideoBitrate(videoCodecInfo.getBitRatesMax());
+        tempVideoCodecProfile.setVideoBitrate(videoBitrate);
         tempVideoCodecProfile.setVideoFrameRates(videoFrameRates);
         tempVideoCodecProfile.setIFrameInterval(iFrameInterval);
         tempVideoCodecProfile.setWidth(width);
@@ -194,6 +197,50 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
         return tempVideoCodecProfile;
 
     }
+    /*2019-03-02, Clare test hardware codec still fail
+    * */
+
+//        public LUVideoCodecProfile createVideoDefaultCodecProfile(int width, int height){
+//        int videoFrameRates = 30;
+////        int width = 1080;
+////        int height = 1920;
+//        int iFrameInterval = 5;
+//        int videoBitrate = 2000000;
+//        LUVideoCodecProfile tempVideoCodecProfile;
+//        tempVideoCodecProfile = new LUVideoCodecProfile();
+//        tempVideoCodecProfile.setEncodedName(VIDEO_QCOM_ENCODER_AVC);
+//        MediaCodecInfo mediaCodecInfo = getVideoCodecInfo(tempVideoCodecProfile.getEncodedName());
+//        if (mediaCodecInfo == null) {
+//            _viewCallback.viewShowErrorDialog("Cannot get Video Codec Info!");
+//            return null;
+//        }
+//        LUVideoCodecInfo videoCodecInfo = toVideoCodecInfo(mediaCodecInfo, _selectedVideoFormat);
+//        Log.i("aaaa","videoType:"+_selectedVideoFormat);
+//        tempVideoCodecProfile.setEncodedVideoType(_selectedVideoFormat);
+//        tempVideoCodecProfile.setColorFormat(videoCodecInfo.getColorFormats()[videoCodecInfo.getColorFormats().length - 1]);
+//        tempVideoCodecProfile.setVideoBitrate(videoBitrate);
+//        tempVideoCodecProfile.setVideoFrameRates(videoFrameRates);
+//        tempVideoCodecProfile.setIFrameInterval(iFrameInterval);
+//        tempVideoCodecProfile.setWidth(width);
+//        tempVideoCodecProfile.setHeight(height);
+//        tempVideoCodecProfile.setProfileLevel(videoCodecInfo.getProfileLevels()[videoCodecInfo.getProfileLevels().length - 4]);
+//
+//        if (isVideoCodecSettingAvailable(tempVideoCodecProfile) == true) {
+//            Map<String, String> videoSelectedCodec = tempVideoCodecProfile.videoProfileToMap();
+//            if (_utility.saveMapToPreference(ENCODEC_VIDEO_SELECTED_RECORD, videoSelectedCodec) == false) {
+//                _viewCallback.viewShowErrorDialog("Cannot save Video Codec!");
+//            }
+//
+//        } else {
+//            _viewCallback.viewShowErrorDialog("Video Codec settings are invalid!");
+//            tempVideoCodecProfile = null;
+//            Log.i("aaaa","create Video codec fail");
+//
+//        }
+//
+//        return tempVideoCodecProfile;
+//
+//    }
 
     /*  start to do video record
         _camera.createCaptureSession(...) will pass preview , record surface to builder.addTarget() and set Codec Callback
@@ -201,34 +248,10 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
         width max:1920, height max:1080, frame rate max:30
      */
     private void startVideoRecord(SurfaceTexture previewSurTexture, int width, int height) {
-        int colorFormat;
-        int videoBitrate;
-        int videoFrameRates;
+
         if (videoCodecProfile == null) {
-            setSelectedVideoCodecName(VIDEO_GOOGLE_H264_ENCODER);
-            MediaCodecInfo mediaCodecInfo = getVideoCodecInfo(getSelectedVideoCodecName());
-            if (mediaCodecInfo == null) {
-                _viewCallback.viewShowErrorDialog("Cannot get Video Codec Info!");
-                return;
-            }
-            LUVideoCodecInfo videoCodecInfo = toVideoCodecInfo(mediaCodecInfo, _selectedVideoFormat);
-            colorFormat = videoCodecInfo.getColorFormats()[videoCodecInfo.getColorFormats().length - 1];
-            videoBitrate = videoCodecInfo.getBitRatesMax();
-            videoFrameRates = 30;
-
-            videoCodecProfile = new LUVideoCodecProfile(getSelectedVideoCodecName(), _selectedVideoFormat,
-                    colorFormat, videoBitrate,
-                    videoFrameRates, 5, 1920, 1080, videoCodecInfo.getProfileLevels()[videoCodecInfo.getProfileLevels().length - 1]);
-            if (isVideoCodecSettingAvailable(videoCodecProfile) == true) {
-                Map<String, String> videoSelectedCodec = videoCodecProfile.videoProfileToMap();
-                if (_utility.saveMapToPreference(ENCODEC_VIDEO_SELECTED_RECORD, videoSelectedCodec) == false) {
-                    _viewCallback.viewShowErrorDialog("Cannot save Video Codec!");
-                }
-
-            } else {
-                _viewCallback.viewShowErrorDialog("Video Codec settings are invalid!");
-            }
-//            videoCodecProfile = createVideoDefaultCodecProfile();
+//            videoCodecProfile = createVideoDefaultCodecProfile(width, height);
+            videoCodecProfile = createVideoDefaultCodecProfile();
 
         }
 

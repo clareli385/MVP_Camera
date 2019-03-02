@@ -49,6 +49,7 @@ import static com.example.clareli.mvp_video_record.Util.IConstant.AUDIO_TYPE;
 import static com.example.clareli.mvp_video_record.Util.IConstant.ENCODEC_AUDIO_SELECTED_RECORD;
 import static com.example.clareli.mvp_video_record.Util.IConstant.ENCODEC_VIDEO_SELECTED_RECORD;
 import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_GOOGLE_H264_ENCODER;
+import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_QCOM_ENCODER_AVC;
 import static com.example.clareli.mvp_video_record.Util.IConstant.VIDEO_TYPE;
 import static com.example.clareli.mvp_video_record.Util.LUAudioCodecProfile.mapToAudioProfile;
 import static com.example.clareli.mvp_video_record.Util.LUVideoCodecProfile.mapToVideoProfile;
@@ -153,6 +154,47 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
         }
     }
 
+    public LUVideoCodecProfile createVideoDefaultCodecProfile(){
+        int videoFrameRates = 30;
+        int width = 1920;
+        int height = 1080;
+        int iFrameInterval = 5;
+        LUVideoCodecProfile tempVideoCodecProfile;
+        tempVideoCodecProfile = new LUVideoCodecProfile();
+        tempVideoCodecProfile.setEncodedName(VIDEO_GOOGLE_H264_ENCODER);
+        MediaCodecInfo mediaCodecInfo = getVideoCodecInfo(tempVideoCodecProfile.getEncodedName());
+        if (mediaCodecInfo == null) {
+            _viewCallback.viewShowErrorDialog("Cannot get Video Codec Info!");
+            return null;
+        }
+        LUVideoCodecInfo videoCodecInfo = toVideoCodecInfo(mediaCodecInfo, _selectedVideoFormat);
+
+        tempVideoCodecProfile.setEncodedVideoType(_selectedVideoFormat);
+        tempVideoCodecProfile.setColorFormat(videoCodecInfo.getColorFormats()[videoCodecInfo.getColorFormats().length - 1]);
+        tempVideoCodecProfile.setVideoBitrate(videoCodecInfo.getBitRatesMax());
+        tempVideoCodecProfile.setVideoFrameRates(videoFrameRates);
+        tempVideoCodecProfile.setIFrameInterval(iFrameInterval);
+        tempVideoCodecProfile.setWidth(width);
+        tempVideoCodecProfile.setHeight(height);
+        tempVideoCodecProfile.setProfileLevel(videoCodecInfo.getProfileLevels()[videoCodecInfo.getProfileLevels().length - 1]);
+
+        if (isVideoCodecSettingAvailable(tempVideoCodecProfile) == true) {
+            Map<String, String> videoSelectedCodec = tempVideoCodecProfile.videoProfileToMap();
+            if (_utility.saveMapToPreference(ENCODEC_VIDEO_SELECTED_RECORD, videoSelectedCodec) == false) {
+                _viewCallback.viewShowErrorDialog("Cannot save Video Codec!");
+            }
+
+        } else {
+            _viewCallback.viewShowErrorDialog("Video Codec settings are invalid!");
+            tempVideoCodecProfile = null;
+            Log.i("aaaa","create Video codec fail");
+
+        }
+
+        return tempVideoCodecProfile;
+
+    }
+
     /*  start to do video record
         _camera.createCaptureSession(...) will pass preview , record surface to builder.addTarget() and set Codec Callback
         In test device Sony XZP android 8.0, using codec VIDEO_GOOGLE_H264_ENCODER =>
@@ -186,12 +228,13 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
             } else {
                 _viewCallback.viewShowErrorDialog("Video Codec settings are invalid!");
             }
+//            videoCodecProfile = createVideoDefaultCodecProfile();
 
         }
 
 
         //TODO modify preview result not callback _cameraDevice
-        if (_cameraDevice != null) {
+        if ((_cameraDevice != null) & (videoCodecProfile != null)) {
             _camera.closePreviewSession();
             _previewSurTexture = previewSurTexture;
             if (_previewSurTexture == null) {
@@ -204,7 +247,58 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
             _previewSurface = new Surface(_previewSurTexture);
             _camera.createCaptureSession(_previewSurface, _encodedVideo.getSurface());
 
+        } else {
+            Log.i("aaaa","start Video Record fail");
+
         }
+
+    }
+
+    public LUAudioCodecProfile createAudioDefaultCodecProfile(){
+        int sampleRateInHz;// = 44100;
+        int channelConfig = AudioFormat.CHANNEL_IN_STEREO;//AudioFormat.CHANNEL_IN_MONO;
+        int encodingBit = AudioFormat.ENCODING_PCM_16BIT;
+        int audio_buffer_times = 1;
+        int bufferSize;
+        int channelCount = 2;
+        int lengthSampleRate;
+        int profileLevel = MediaCodecInfo.CodecProfileLevel.AACObjectLC;
+        LUAudioCodecProfile tempAudioCodecProfile = new LUAudioCodecProfile();
+        tempAudioCodecProfile.setEncodecName(AUDIO_GOOGLE_AAC_ENCODER);
+        MediaCodecInfo mediaCodecInfo = getAudioCodecInfo(tempAudioCodecProfile.getEncodecName());
+        if (mediaCodecInfo == null) {
+            _viewCallback.viewShowErrorDialog("Cannot get Audio Codec Info!");
+            return null;
+        }
+        //get other audio codec settings from the codec lists by the codec name.
+        LUAudioCodecInfo audioCodecInfo = toAudioCodecInfo(mediaCodecInfo, _selectedAudioFormat);
+
+        lengthSampleRate = audioCodecInfo.getSampleRates().length;
+        sampleRateInHz = audioCodecInfo.getSampleRates()[lengthSampleRate - 1];
+        bufferSize = AudioRecord.getMinBufferSize(sampleRateInHz,
+                channelConfig, encodingBit) * audio_buffer_times;
+
+        tempAudioCodecProfile.setEncodedAudioType(_selectedAudioFormat);
+        tempAudioCodecProfile.setSampleRate(sampleRateInHz);
+        tempAudioCodecProfile.setChannelCount(channelCount);
+        tempAudioCodecProfile.setBitRate(audioCodecInfo.getBitRatesMax());
+        tempAudioCodecProfile.setProfileLevel(profileLevel);
+        tempAudioCodecProfile.setMaxInputSize(bufferSize);
+
+        if(isAudioCodecSettingAvailable(tempAudioCodecProfile)){
+            Map<String, String> audioSelectedCodec = tempAudioCodecProfile.audioProfileToMap();
+            if (_utility.saveMapToPreference(ENCODEC_AUDIO_SELECTED_RECORD, audioSelectedCodec) == false) {
+                _viewCallback.viewShowErrorDialog("Cannot save Audio Codec!");
+                Log.i("aaaa","Cannot save audio codec");
+            }
+
+        } else {
+            _viewCallback.viewShowErrorDialog("Audio Codec settings are invalid!");
+            tempAudioCodecProfile = null;
+            Log.i("aaaa","create audio codec fail");
+
+        }
+        return tempAudioCodecProfile;
 
     }
 
@@ -212,50 +306,18 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
     channelCount over 2 in Android 8.0, the audio will be destroyed
      */
     public void startAudioRecord() {
-        int sampleRateInHz;// = 44100;
         int channelConfig = AudioFormat.CHANNEL_IN_STEREO;//AudioFormat.CHANNEL_IN_MONO;
         int encodingBit = AudioFormat.ENCODING_PCM_16BIT;
         int audio_buffer_times = 1;
-        int bufferSize;
-        int channelCount = 2;
-        int bitRate;
-        int lengthSampleRate;
+
         if (audioCodecProfileAAC == null) {
-            setSelectedAudioCodecName(AUDIO_GOOGLE_AAC_ENCODER);
-            MediaCodecInfo mediaCodecInfo = getAudioCodecInfo(getSelectedAudioCodecName());
-            if (mediaCodecInfo == null) {
-                _viewCallback.viewShowErrorDialog("Cannot get Audio Codec Info!");
-                return;
-            }
-            LUAudioCodecInfo audioCodecInfo = toAudioCodecInfo(mediaCodecInfo, _selectedAudioFormat);
 
-            bitRate = audioCodecInfo.getBitRatesMax();
-            lengthSampleRate = audioCodecInfo.getSampleRates().length;
-            sampleRateInHz = audioCodecInfo.getSampleRates()[lengthSampleRate - 1];
-            bufferSize = AudioRecord.getMinBufferSize(sampleRateInHz,
-                    channelConfig, encodingBit) * audio_buffer_times;
-
-            audioCodecProfileAAC = new LUAudioCodecProfile(getSelectedAudioCodecName(), _selectedAudioFormat,
-                    sampleRateInHz, channelCount, bitRate, MediaCodecInfo.CodecProfileLevel.AACObjectLC, bufferSize);
-
-            if (isAudioCodecSettingAvailable(audioCodecProfileAAC)) {
-
-                Map<String, String> audioSelectedCodec = audioCodecProfileAAC.audioProfileToMap();
-                if (_utility.saveMapToPreference(ENCODEC_AUDIO_SELECTED_RECORD, audioSelectedCodec) == false) {
-                    _viewCallback.viewShowErrorDialog("Cannot save Audio Codec!");
-                }
-
-            } else {
-                _viewCallback.viewShowErrorDialog("Audio Codec settings are invalid!");
-            }
-
-        } else {
-            sampleRateInHz = audioCodecProfileAAC.getSampleRate();
+            audioCodecProfileAAC = createAudioDefaultCodecProfile();
         }
 
-        if (_encodedAudio != null) {
+        if ((_encodedAudio != null) && (audioCodecProfileAAC != null)) {
             if (_recordedAudio != null) {
-                _micRecord = _recordedAudio.initRecord(sampleRateInHz, channelConfig, encodingBit, audio_buffer_times);
+                _micRecord = _recordedAudio.initRecord(audioCodecProfileAAC.getSampleRate(), channelConfig, encodingBit, audio_buffer_times);
                 if (_micRecord != null) {
                     _encodedAudio.configuredAudioCodec(audioCodecProfileAAC);
                     if (_encodedAudio.getCodec() != null) {
@@ -268,11 +330,15 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
 
             } else {
                 _viewCallback.viewShowErrorDialog("audio Record Start fail!");
+                Log.i("aaaa","recorded Audio fail");
+
 
             }
 
         } else {
             _viewCallback.viewShowErrorDialog("audio Record encoded fail!");
+            Log.i("aaaa","start AudioRecord fail");
+
         }
 
     }
@@ -610,7 +676,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
 
     private boolean isVideoCodecSettingAvailable(LUVideoCodecProfile videoCodecSettings) {
         boolean result = false;
-        String codecName = getSelectedVideoCodecName();
+        String codecName = videoCodecSettings.getEncodedName();
         MediaCodecInfo codec = getVideoCodecInfo(codecName);
         if (codec == null) return false;
         MediaCodecInfo.CodecCapabilities capabilities = codec.getCapabilitiesForType(_selectedVideoFormat);
@@ -658,7 +724,7 @@ public class LUPresenterControl implements IPresenterControl, IPresenterCallback
 
     public boolean isAudioCodecSettingAvailable(LUAudioCodecProfile audioCodecProfile) {
         boolean result = true;
-        String codecName = getSelectedAudioCodecName();
+        String codecName = audioCodecProfile.getEncodecName();
         MediaCodecInfo codec = getAudioCodecInfo(codecName);
         if (codec == null) return false;
         MediaCodecInfo.CodecCapabilities capabilities = codec.getCapabilitiesForType(_selectedAudioFormat);

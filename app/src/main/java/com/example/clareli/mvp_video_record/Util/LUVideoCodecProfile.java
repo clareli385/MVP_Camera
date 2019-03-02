@@ -46,6 +46,47 @@ public class LUVideoCodecProfile {
 
     }
 
+    public LUVideoCodecProfile(){
+
+    }
+
+    public void setEncodedName(String encodedName){
+        _encodedName = encodedName;
+    }
+
+    public void setEncodedVideoType(String videoType){
+        _encodedVideoType = videoType;
+    }
+
+    public void setColorFormat(int colorFormat){
+        _colorFormat = colorFormat;
+    }
+
+    public void setVideoBitrate(int videoBitrate){
+        _videoBitrate = videoBitrate;
+    }
+
+    public void setVideoFrameRates(int videoFrameRates){
+        _videoFrameRates = videoFrameRates;
+    }
+
+    public void setIFrameInterval(int iFrameInterval){
+        _iFrameInterval = iFrameInterval;
+    }
+
+    public void setWidth(int width){
+        _width = width;
+    }
+
+    public void setHeight(int height){
+        _height = height;
+    }
+
+    public void setProfileLevel(MediaCodecInfo.CodecProfileLevel profileLevel){
+        _profileLevel = profileLevel;
+    }
+
+
     public String getEncodedName(){
         return _encodedName;
     }
